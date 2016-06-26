@@ -1,0 +1,38 @@
+{
+  "name": "restful",
+  "version": "0.0.1",
+  "description": "RESTful interface wrapper for http client app.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shishidosoichiro/restful.git"
+  },
+  "keywords": [
+    "RESTful",
+    "http",
+    "model"
+  ],
+  "author": "Soichiro Shishido",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shishidosoichiro/restful/issues"
+  },
+  "homepage": "https://github.com/shishidosoichiro/restful#readme",
+  "dependencies": {
+    "flow": "git+https://github.com/shishidosoichiro/flow.js.git",
+    "lodash": "^4.13.1"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "coveralls": "^2.11.9",
+    "gulp": "^3.9.1",
+    "gulp-istanbul": "^1.0.0",
+    "gulp-mocha": "^2.2.0",
+    "gulp-plumber": "^1.1.0",
+    "istanbul": "^0.4.4",
+    "mocha": "^2.5.3"
+  }
+}
