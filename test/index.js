@@ -50,11 +50,21 @@ describe('restful', function(){
 			return Promise.reject(new Error('post error'));
 		}}, stub)
 	});
+	var ThrowPutError = new Restful({
+		req: _.defaults({put: function(){
+			throw new Error('put error');
+		}}, stub)
+	});
+	var RejectPutError = new Restful({
+		req: _.defaults({put: function(){
+			return Promise.reject(new Error('put error'));
+		}}, stub)
+	});
 
 	describe('#insert', function(done){
 		it('should validate and serialize and http post', function(){
 			var user = {username: 'taro'};
-			var User = new Restful({
+			new Restful({
 				req: {
 					post: function(data){
 						data.should.deep.equal(user);
@@ -72,8 +82,8 @@ describe('restful', function(){
 					data.should.deep.equal(user);
 					return data;
 				}
-			});
-			User.insert(user)
+			})
+			.insert(user)
 			.then(function(data){
 				data.should.deep.equal(user);
 				done();
@@ -131,7 +141,54 @@ describe('restful', function(){
 	});
 
 	describe('#update', function(){
-		
+		it('should return rejected Promise, If validate method throws a error.', function(done){
+			ThrowValidationError.update({})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('validation error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If validate method return rejected Promise.', function(done){
+			RejectValidationError.update({})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('validation error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If serialize method throws a error.', function(done){
+			ThrowSerializationError.update({})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('serialization error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If serialize method return rejected Promise.', function(done){
+			RejectSerializationError.update({})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('serialization error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If put method throws a error.', function(done){
+			ThrowPostError.update({})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('put error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If put method return rejected Promise.', function(done){
+			RejectPostError.update({})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('put error');
+				done();
+			});
+		});
 	});
 	describe('#removeById', function(){
 		
