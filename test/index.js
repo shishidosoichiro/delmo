@@ -61,19 +61,14 @@ describe('restful', function(){
 		}}, stub)
 	});
 
-	describe('#insert', function(done){
-		it('should validate and serialize and http post', function(){
+	describe('#insert', function(){
+		it('should validate, serialize and http post', function(done){
 			var user = {username: 'taro'};
 			new Restful({
-				req: {
-					post: function(data){
+				req: _.defaults({post: function(data){
 						data.should.deep.equal(user);
 						return data;
-					},
-					put: function(){},
-					get: function(){},
-					remove: function(){}
-				},
+				}}, stub),
 				validate: function(data){
 					data.should.deep.equal(user);
 					return data;
@@ -124,7 +119,6 @@ describe('restful', function(){
 		});
 		it('should return rejected Promise, If post method throws a error.', function(done){
 			ThrowPostError.insert({})
-			.then(done)
 			.catch(function(err){
 				err.message.should.equal('post error');
 				done();
@@ -132,7 +126,6 @@ describe('restful', function(){
 		});
 		it('should return rejected Promise, If post method return rejected Promise.', function(done){
 			RejectPostError.insert({})
-			.then(done)
 			.catch(function(err){
 				err.message.should.equal('post error');
 				done();
@@ -141,6 +134,30 @@ describe('restful', function(){
 	});
 
 	describe('#update', function(){
+		it('should validate, serialize and http put', function(done){
+			var user = {id: 12345, username: 'taro'};
+			new Restful({
+				req: _.defaults({put: function(id, data){
+						id.should.deep.equal(user.id);
+						data.should.deep.equal(user);
+						return data;
+				}}, stub),
+				validate: function(data){
+					data.should.deep.equal(user);
+					return data;
+				},
+				serialize: function(data){
+					data.should.deep.equal(user);
+					return data;
+				}
+			})
+			.update(user)
+			.then(function(data){
+				data.should.deep.equal(user);
+				done();
+			})
+			.catch(done);
+		});
 		it('should return rejected Promise, If validate method throws a error.', function(done){
 			ThrowValidationError.update({})
 			.then(done)
@@ -174,16 +191,14 @@ describe('restful', function(){
 			});
 		});
 		it('should return rejected Promise, If put method throws a error.', function(done){
-			ThrowPostError.update({})
-			.then(done)
+			ThrowPutError.update({})
 			.catch(function(err){
 				err.message.should.equal('put error');
 				done();
 			});
 		});
 		it('should return rejected Promise, If put method return rejected Promise.', function(done){
-			RejectPostError.update({})
-			.then(done)
+			RejectPutError.update({})
 			.catch(function(err){
 				err.message.should.equal('put error');
 				done();
