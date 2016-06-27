@@ -46,13 +46,19 @@ var defaults = {
 	validate: noop,
 	serialize: noop,
 	deserialize: noop,
-	bind: true
+	bind: true,
+	req: {
+		get: noop,
+		post: noop,
+		put: noop,
+		remove: noop
+	}
 };
 
 var Restful = function(options){
 	if (!(this instanceof Restful)) return new Restful(options);
 
-	options = _.defaults(options, defaults);
+	options = _.defaultsDeep(options || {}, defaults);
 
 	this.options = options;
 	this.req = options.req;

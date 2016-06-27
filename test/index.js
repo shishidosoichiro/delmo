@@ -113,6 +113,9 @@ describe('restful', function(){
 			return Promise.reject(new Error('not found'));
 		}}, stub)
 	});
+	it('should return a instance', function(){
+		Restful().should.be.instanceof(Restful);
+	});
 
 	describe('#insert', function(){
 		it('should validate, serialize and execute req.post', function(done){
@@ -405,6 +408,12 @@ describe('restful', function(){
 				}
 			})
 			HasId.hasId({userId: 123456}).should.equal(true);
+			HasId.hasId({userId: 'string'}).should.equal(true);
+			HasId.hasId({userId: 0}).should.equal(false);
+			HasId.hasId({userId: -1}).should.equal(false);
+			HasId.hasId({userId: ''}).should.equal(false);
+			HasId.hasId({userId: null}).should.equal(false);
+			HasId.hasId({userId: {}}).should.equal(false);
 			HasId.hasId({id: 123456}).should.equal(false);
 		});
 		it('should throws a error, If id method throws a error.', function(done){
