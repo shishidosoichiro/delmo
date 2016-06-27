@@ -128,7 +128,7 @@ var Restful = function(options){
 		_.flow(
 			resolve,
 			this.validate,
-			parallel(this.serialize, this.get),
+			parallel(this.serialize, this.byId),
 			whether(_.spread(_.isEqual),
 				reject('same object.'),
 				_.flow(_.head, this.req.put)
