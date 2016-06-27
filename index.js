@@ -38,9 +38,6 @@ var resolve = Promise.resolve.bind(Promise);
 var noop = function(arg){
 	return arg;
 };
-var not = function(bool){
-	return !bool;
-};
 
 var defaults = {
 	id: function(data){
@@ -127,11 +124,6 @@ var Restful = function(options){
 		this.deserialize
 	);
 
-	this._get = flow(
-		resolve,
-		this.req.get
-	);
-
 	this._save = whether(this.hasId,
 		_.flow(
 			resolve,
@@ -199,7 +191,7 @@ Restful.prototype.byId = function(id){
  * var promise = this.get(object);
  */
 Restful.prototype.get = function(path, query){
-	return this.req.get(path, query);
+	return this.req.get.apply(this.req, arguments);
 };
 
 /**
@@ -208,7 +200,7 @@ Restful.prototype.get = function(path, query){
  * var promise = this.find(query);
  */
 Restful.prototype.find = function(path, query){
-	return this.req.get(path, query);
+	return this.req.get.apply(this.req, arguments);
 };
 
 /**
