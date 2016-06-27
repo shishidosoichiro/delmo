@@ -40,6 +40,18 @@ describe('restful', function(){
 			return Promise.reject(new Error('serialization error'));
 		}
 	});
+	var ThrowDeserializationError = new Restful({
+		req: stub,
+		deserialize: function(data){
+			throw new Error('deserialization error');
+		}
+	});
+	var RejectDeserializationError = new Restful({
+		req: stub,
+		deserialize: function(data){
+			return Promise.reject(new Error('deserialization error'));
+		}
+	});
 	var ThrowPostError = new Restful({
 		req: _.defaults({post: function(){
 			throw new Error('post error');
@@ -60,14 +72,46 @@ describe('restful', function(){
 			return Promise.reject(new Error('put error'));
 		}}, stub)
 	});
+	var ThrowRemoveError = new Restful({
+		req: _.defaults({remove: function(){
+			throw new Error('remove error');
+		}}, stub)
+	});
+	var RejectRemoveError = new Restful({
+		req: _.defaults({remove: function(){
+			return Promise.reject(new Error('remove error'));
+		}}, stub)
+	});
+	var ThrowGetError = new Restful({
+		req: _.defaults({get: function(){
+			throw new Error('get error');
+		}}, stub)
+	});
+	var RejectGetError = new Restful({
+		req: _.defaults({get: function(){
+			return Promise.reject(new Error('get error'));
+		}}, stub)
+	});
+	var ThrowIdError = new Restful({
+		req: stub,
+		id: function(){
+			throw new Error('id error');
+		}
+	});
+	var RejectIdError = new Restful({
+		req: stub,
+		id: function(){
+			return Promise.reject(new Error('id error'));
+		}
+	});
 
 	describe('#insert', function(){
-		it('should validate, serialize and http post', function(done){
+		it('should validate, serialize and execute req.post', function(done){
 			var user = {username: 'taro'};
 			new Restful({
 				req: _.defaults({post: function(data){
-						data.should.deep.equal(user);
-						return data;
+					data.should.deep.equal(user);
+					return data;
 				}}, stub),
 				validate: function(data){
 					data.should.deep.equal(user);
@@ -134,13 +178,13 @@ describe('restful', function(){
 	});
 
 	describe('#update', function(){
-		it('should validate, serialize and http put', function(done){
+		it('should validate, serialize and execute req.put', function(done){
 			var user = {id: 12345, username: 'taro'};
 			new Restful({
 				req: _.defaults({put: function(id, data){
-						id.should.deep.equal(user.id);
-						data.should.deep.equal(user);
-						return data;
+					id.should.deep.equal(user.id);
+					data.should.deep.equal(user);
+					return data;
 				}}, stub),
 				validate: function(data){
 					data.should.deep.equal(user);
@@ -206,13 +250,136 @@ describe('restful', function(){
 		});
 	});
 	describe('#removeById', function(){
-		
+		it('should execute req.remove.', function(done){
+			var user = {id: 12345, username: 'taro'};
+			new Restful({
+				req: _.defaults({remove: function(id){
+					return user;
+				}}, stub)
+			})
+			.removeById(user.id)
+			.then(function(data){
+				data.should.deep.equal(user);
+				done();
+			})
+			.catch(done);
+		});
+		it('should return rejected Promise, If remove method throws a error.', function(done){
+			ThrowRemoveError.removeById(12345)
+			.catch(function(err){
+				err.message.should.equal('remove error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If remove method return rejected Promise.', function(done){
+			RejectRemoveError.removeById(12345)
+			.catch(function(err){
+				err.message.should.equal('remove error');
+				done();
+			});
+		});
 	});
 	describe('#remove', function(){
-		
+		it('should execute req.remove.', function(done){
+			var user = {id: 12345, username: 'taro'};
+			new Restful({
+				req: _.defaults({remove: function(id){
+					return user;
+				}}, stub)
+			})
+			.remove(user)
+			.then(function(data){
+				data.should.deep.equal(user);
+				done();
+			})
+			.catch(done);
+		});
+		it('should return rejected Promise, If remove method throws a error.', function(done){
+			ThrowRemoveError.remove({id: 12345})
+			.catch(function(err){
+				err.message.should.equal('remove error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If remove method return rejected Promise.', function(done){
+			RejectRemoveError.remove({id: 12345})
+			.catch(function(err){
+				err.message.should.equal('remove error');
+				done();
+			});
+		});
 	});
 	describe('#byId', function(){
-		
+		it('should execute req.get and deserialize', function(done){
+			new Restful({
+				req: _.defaults({get: function(id){
+					return {id: id, username: 'taro'};
+				}}, stub)
+			})
+			.byId(123456)
+			.then(function(data){
+				data.id.should.deep.equal(123456);
+				done();
+			})
+			.catch(done);
+		});
+		it('should execute req.get.', function(done){
+			new Restful({
+				req: _.defaults({get: function(id){
+					return {id: id, username: 'taro'};
+				}}, stub)
+			})
+			.byId({id: 123456})
+			.then(function(data){
+				data.id.should.deep.equal(123456);
+				done();
+			})
+			.catch(done);
+		});
+		it('should return rejected Promise, If id method throws a error.', function(done){
+			ThrowIdError.byId(1234567)
+			.catch(function(err){
+				err.message.should.equal('id error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If id method return rejected Promise.', function(done){
+			RejectIdError.byId(1234567)
+			.catch(function(err){
+				err.message.should.equal('id error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If get method throws a error.', function(done){
+			ThrowGetError.byId(1234567)
+			.catch(function(err){
+				err.message.should.equal('get error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If get method return rejected Promise.', function(done){
+			RejectGetError.byId(1234567)
+			.catch(function(err){
+				err.message.should.equal('get error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If deserialize method throws a error.', function(done){
+			ThrowDeserializationError.byId(1234567)
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('deserialization error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If deserialize method return rejected Promise.', function(done){
+			RejectDeserializationError.byId(1234567)
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('deserialization error');
+				done();
+			});
+		});
 	});
 	describe('#get', function(){
 		
@@ -221,7 +388,32 @@ describe('restful', function(){
 		
 	});
 	describe('#hasId', function(){
-		
+		it('should execute id method.', function(){
+			var HasId = new Restful({
+				req: stub,
+				id: function(data){
+					return data['userId'];
+				}
+			})
+			HasId.hasId({userId: 123456}).should.equal(true);
+			HasId.hasId({id: 123456}).should.equal(false);
+		});
+		it('should throws a error, If id method throws a error.', function(done){
+			try {
+				var res = ThrowIdError.hasId(1234567)
+			}
+			catch (err) {
+				err.message.should.equal('id error');
+				done();
+			}
+		});
+		it('should return rejected Promise, If id method return rejected Promise.', function(done){
+			RejectIdError.hasId(1234567)
+			.catch(function(err){
+				err.message.should.equal('id error');
+				done();
+			});
+		});
 	});
 	describe('#save', function(){
 		
