@@ -8,11 +8,15 @@ var _ = require('lodash');
 
 var Restful = require('../');
 
+var noop = function(arg){
+	return arg;
+};
+
 var stub = {
-	post: _.noop,
-	put: _.noop,
-	get: _.noop,
-	remove: _.noop
+	post: noop,
+	put: noop,
+	get: noop,
+	remove: noop
 };
 
 describe('restful', function(){
@@ -103,6 +107,11 @@ describe('restful', function(){
 		id: function(){
 			return Promise.reject(new Error('id error'));
 		}
+	});
+	var NotFound = new Restful({
+		req: _.defaults({get: function(id){
+			return Promise.reject(new Error('not found'));
+		}}, stub)
 	});
 
 	describe('#insert', function(){
@@ -416,7 +425,103 @@ describe('restful', function(){
 		});
 	});
 	describe('#save', function(){
-		
+		it('should return rejected Promise, If validate method throws a error.', function(done){
+			ThrowValidationError.save({})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('validation error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If validate method return rejected Promise.', function(done){
+			RejectValidationError.save({})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('validation error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If serialize method throws a error.', function(done){
+			ThrowSerializationError.save({})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('serialization error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If serialize method return rejected Promise.', function(done){
+			RejectSerializationError.save({})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('serialization error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If post method throws a error.', function(done){
+			ThrowPostError.save({})
+			.catch(function(err){
+				err.message.should.equal('post error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If post method return rejected Promise.', function(done){
+			RejectPostError.save({})
+			.catch(function(err){
+				err.message.should.equal('post error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If get method throws a error.', function(done){
+			ThrowGetError.save({id: 12345})
+			.catch(function(err){
+				err.message.should.equal('get error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If get method return rejected Promise.', function(done){
+			RejectGetError.save({id: 12345})
+			.catch(function(err){
+				err.message.should.equal('get error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If put method throws a error.', function(done){
+			ThrowPutError.save({id: 12345})
+			.catch(function(err){
+				err.message.should.equal('put error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If put method return rejected Promise.', function(done){
+			RejectPutError.save({id: 12345})
+			.catch(function(err){
+				err.message.should.equal('put error');
+				done();
+			});
+		});
+		it('should execute put, If data found but different.', function(done){
+			new Restful({
+				req: _.defaults({
+					get: function(id){
+						id.should.equal(2468);
+						return {id: id, username:'a_different_name'};
+					},
+					put: function(id, data){
+						id.should.equal(2468);
+						data.id.should.equal(2468);
+						data.username.should.equal('a_name');
+						return data;
+					}
+				}, stub)
+			})
+			.save({id: 2468, username: 'a_name'})
+			.then(function(data){
+				data.id.should.equal(2468);
+				data.username.should.equal('a_name');
+				done();
+			})
+			.catch(done);
+		});
 	});
 	describe('#post', function(){
 		

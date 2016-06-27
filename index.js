@@ -10,8 +10,8 @@ var parallel = function(){
 	var args = slice(arguments);
 	return function(data){
 		return Promise.all(args.map(function(f){
-			return f(data);
-		}));
+			return f.call(this, data);
+		}, this));
 	};
 };
 var whether = function(test, trueSide, falseSide){
@@ -19,9 +19,9 @@ var whether = function(test, trueSide, falseSide){
 
 	return function(data){
 		var execute = function(res){
-			if (res) return trueSide(data);
-			else     return falseSide(data);
-		};
+			if (res) return trueSide.call(this, data);
+			else     return falseSide.call(this, data);
+		}.bind(this);
 		var res = test(data);
 		if (res instanceof Promise) return res.then(execute);
 		else return execute(res);
@@ -125,13 +125,13 @@ var Restful = function(options){
 	);
 
 	this._save = whether(this.hasId,
-		_.flow(
+		flow(
 			resolve,
 			this.validate,
 			parallel(this.serialize, this.byId),
 			whether(_.spread(_.isEqual),
 				reject('same object.'),
-				_.flow(_.head, this.req.put)
+				flow(_.head, parallel(this.id, noop), _.spread(this.req.put))
 			)
 		),
 		this.insert
@@ -220,18 +220,6 @@ Restful.prototype.hasId = function(data){
 Restful.prototype.save = function(data){
 	return this._save(data);
 };
-//Restful.prototype.save = function(data){
-//	if (this.hasId(data)) {
-//		return this.get(data)
-//		.then(function(old){
-//			if (_.isEqual(old, data)) return Promise.reject('same object.');
-//			return this.update(data);
-//		})
-//	}
-//	else {
-//		return this.insert(data);
-//	}
-//};
 
 /**
  * post
