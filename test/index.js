@@ -508,7 +508,7 @@ describe('restful', function(){
 				done();
 			});
 		});
-		it('should execute put, If data found but different.', function(done){
+		it('should execute put, If data is found and different.', function(done){
 			new Restful({
 				req: _.defaults({
 					get: function(id){
@@ -530,6 +530,21 @@ describe('restful', function(){
 				done();
 			})
 			.catch(done);
+		});
+		it('should reject with a error, If data is found but same.', function(done){
+			new Restful({
+				req: _.defaults({
+					get: function(id){
+						id.should.equal(2468);
+						return {id: 2468, username: 'a_name'};
+					}
+				}, stub)
+			})
+			.save({id: 2468, username: 'a_name'})
+			.catch(function(err){
+				err.message.should.equal('same object.');
+				done();
+			})
 		});
 	});
 	describe('#post', function(){

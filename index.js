@@ -38,6 +38,10 @@ var resolve = Promise.resolve.bind(Promise);
 var noop = function(arg){
 	return arg;
 };
+var log = function(data){
+	console.log(data)
+	return data;
+};
 
 var defaults = {
 	id: function(data){
@@ -48,10 +52,10 @@ var defaults = {
 	deserialize: noop,
 	bind: true,
 	req: {
-		get: noop,
-		post: noop,
-		put: noop,
-		remove: noop
+		get: reject('\'get\' is not impemented method.'),
+		post: reject('\'post\' is not impemented method.'),
+		put: reject('\'put\' is not impemented method.'),
+		remove: reject('\'remove\' is not impemented method.')
 	}
 };
 
