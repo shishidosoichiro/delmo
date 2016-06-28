@@ -9,6 +9,7 @@ var flow = require('flow');
 /**
  * helper functions
  */
+// slice array
 var slice = function(array, begin, end){
   return Array.prototype.slice.call(array, begin, end);
 };
@@ -62,10 +63,10 @@ var defaults = {
   response: noop,
   bind: true,
   req: {
-    get: reject('\'req.get\' is not impemented method.'),
-    post: reject('\'req.post\' is not impemented method.'),
-    put: reject('\'req.put\' is not impemented method.'),
-    remove: reject('\'req.remove\' is not impemented method.')
+    get: reject('\'req.get\' is not implemented method.'),
+    post: reject('\'req.post\' is not implemented method.'),
+    put: reject('\'req.put\' is not implemented method.'),
+    remove: reject('\'req.remove\' is not implemented method.')
   }
 };
 
