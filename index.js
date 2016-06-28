@@ -79,11 +79,12 @@ var Restful = function(options){
   options = defaultsDeep(options || {}, defaults);
 
   this.options = options;
-  this.req = options.req;
-  this.id = options.id;
-  this.validate = options.validate;
-  this.serialize = options.serialize;
-  this.deserialize = options.deserialize;
+  var req = this.req = options.req;
+  var id = options.id;
+  var validate = options.validate;
+  var serialize = options.serialize;
+  var deserialize = options.deserialize;
+  var response = options.response;
 
   // bind
   if (options.bind) {
@@ -100,7 +101,7 @@ var Restful = function(options){
 
   // id is a number gt 0, or is a string except ''
   this._hasId = flow(
-    this.id,
+    id,
     function(id){
       if (id === undefined)                   return false;
       if (typeof id === 'number' && id > 0)   return true;
@@ -111,63 +112,63 @@ var Restful = function(options){
 
   this._insert = flow(
     resolve,
-    this.validate,
-    this.serialize,
-    this.req.post,
-    this.options.response
+    validate,
+    serialize,
+    req.post,
+    response
   );
 
   this._update = flow(
     resolve,
     parallel(
-      this.id,
+      id,
       flow(
-        this.validate,
-        this.serialize
+        validate,
+        serialize
       )
     ),
-    spread(this.req.put),
-    this.options.response
+    spread(req.put),
+    response
   );
 
   this._removeById = flow(
     resolve,
     whether(this.hasId,
-      this.id
+      id
     ),
-    this.req.remove,
-    this.options.response
+    req.remove,
+    response
   );
 
   this._byId = flow(
     resolve,
     whether(this.hasId,
-      this.id
+      id
     ),
-    this.req.get,
-    this.options.response,
-    this.deserialize
+    req.get,
+    response,
+    deserialize
   );
 
   this._find = flow(
     resolve,
-    this.req.get,
-    this.options.response,
-    this.deserialize
+    req.get,
+    response,
+    deserialize
   );
 
   this._save = whether(this.hasId,
     flow(
       resolve,
-      this.validate,
-      parallel(this.serialize, this.byId),
+      validate,
+      parallel(serialize, this.byId),
       whether(spread(isEqual),
         reject('same object.'),
         flow(
           head,
-          parallel(this.id, noop),
-          spread(this.req.put),
-          this.options.response
+          parallel(id, noop),
+          spread(req.put),
+          response
         )
       )
     ),
