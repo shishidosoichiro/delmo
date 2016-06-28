@@ -261,7 +261,7 @@ describe('restful', function(){
 			});
 		});
 	});
-	describe('#removeById', function(){
+	describe('#removeById(Number)', function(){
 		it('should execute req.remove.', function(done){
 			var user = {id: 12345, username: 'taro'};
 			new Restful({
@@ -291,7 +291,7 @@ describe('restful', function(){
 			});
 		});
 	});
-	describe('#remove', function(){
+	describe('#removeById(Object)', function(){
 		it('should execute req.remove.', function(done){
 			var user = {id: 12345, username: 'taro'};
 			new Restful({
@@ -299,26 +299,12 @@ describe('restful', function(){
 					return user;
 				}}, stub)
 			})
-			.remove(user)
+			.removeById(user)
 			.then(function(data){
 				data.should.deep.equal(user);
 				done();
 			})
 			.catch(done);
-		});
-		it('should return rejected Promise, If remove method throws a error.', function(done){
-			ThrowRemoveError.remove({id: 12345})
-			.catch(function(err){
-				err.message.should.equal('remove error');
-				done();
-			});
-		});
-		it('should return rejected Promise, If remove method return rejected Promise.', function(done){
-			RejectRemoveError.remove({id: 12345})
-			.catch(function(err){
-				err.message.should.equal('remove error');
-				done();
-			});
 		});
 	});
 	describe('#byId', function(){
@@ -393,11 +379,37 @@ describe('restful', function(){
 			});
 		});
 	});
-	describe('#get', function(){
-		
-	});
 	describe('#find', function(){
-		
+		it('should return rejected Promise, If get method throws a error.', function(done){
+			ThrowGetError.find({q: 'taro'})
+			.catch(function(err){
+				err.message.should.equal('get error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If get method return rejected Promise.', function(done){
+			RejectGetError.find({q: 'taro'})
+			.catch(function(err){
+				err.message.should.equal('get error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If deserialize method throws a error.', function(done){
+			ThrowDeserializationError.find({q: 'taro'})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('deserialization error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If deserialize method return rejected Promise.', function(done){
+			RejectDeserializationError.find({q: 'taro'})
+			.then(done)
+			.catch(function(err){
+				err.message.should.equal('deserialization error');
+				done();
+			});
+		});
 	});
 	describe('#hasId', function(){
 		it('should execute id method.', function(){
@@ -546,6 +558,9 @@ describe('restful', function(){
 				done();
 			})
 		});
+	});
+	describe('#get', function(){
+		
 	});
 	describe('#post', function(){
 		

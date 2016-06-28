@@ -6,6 +6,9 @@ var head = require('lodash/head');
 var spread = require('lodash/spread');
 var flow = require('flow');
 
+/**
+ * helper functions
+ */
 var slice = function(array, begin, end){
   return Array.prototype.slice.call(array, begin, end);
 };
@@ -31,9 +34,9 @@ var whether = function(test, trueSide, falseSide){
   };
 };
 var reject = function(message){
-  return function(params){
+  return function(){
     var err = new Error(message);
-    err.params = params;
+    err.params = slice(arguments);
     return Promise.reject(err);
   };
 };
@@ -46,6 +49,9 @@ var log = function(data){
   return data;
 };
 
+/**
+ * default setting
+ */
 var defaults = {
   id: function(data){
     return data['id'];
@@ -53,15 +59,19 @@ var defaults = {
   validate: noop,
   serialize: noop,
   deserialize: noop,
+  response: noop,
   bind: true,
   req: {
-    get: reject('\'get\' is not impemented method.'),
-    post: reject('\'post\' is not impemented method.'),
-    put: reject('\'put\' is not impemented method.'),
-    remove: reject('\'remove\' is not impemented method.')
+    get: reject('\'req.get\' is not impemented method.'),
+    post: reject('\'req.post\' is not impemented method.'),
+    put: reject('\'req.put\' is not impemented method.'),
+    remove: reject('\'req.remove\' is not impemented method.')
   }
 };
 
+/**
+ * Constructor
+ */
 var Restful = function(options){
   if (!(this instanceof Restful)) return new Restful(options);
 
@@ -102,7 +112,8 @@ var Restful = function(options){
     resolve,
     this.validate,
     this.serialize,
-    this.req.post
+    this.req.post,
+    this.options.response
   );
 
   this._update = flow(
@@ -114,18 +125,17 @@ var Restful = function(options){
         this.serialize
       )
     ),
-    spread(this.req.put)
+    spread(this.req.put),
+    this.options.response
   );
 
   this._removeById = flow(
     resolve,
-    this.req.remove
-  );
-
-  this._remove = flow(
-    resolve,
-    this.id,
-    this.removeById
+    whether(this.hasId,
+      this.id
+    ),
+    this.req.remove,
+    this.options.response
   );
 
   this._byId = flow(
@@ -134,6 +144,14 @@ var Restful = function(options){
       this.id
     ),
     this.req.get,
+    this.options.response,
+    this.deserialize
+  );
+
+  this._find = flow(
+    resolve,
+    this.req.get,
+    this.options.response,
     this.deserialize
   );
 
@@ -144,11 +162,25 @@ var Restful = function(options){
       parallel(this.serialize, this.byId),
       whether(spread(isEqual),
         reject('same object.'),
-        flow(head, parallel(this.id, noop), spread(this.req.put))
+        flow(
+          head,
+          parallel(this.id, noop),
+          spread(this.req.put),
+          this.options.response
+        )
       )
     ),
     this.insert
   );
+};
+
+/**
+ * hasId
+ *
+ * Boolean = restful.hasId(Object data);
+ */
+Restful.prototype.hasId = function(data){
+  return this._hasId(data);
 };
 
 /**
@@ -173,23 +205,16 @@ Restful.prototype.update = function(data){
  * removeById
  *
  * Promise = restful.removeById(Number id);
+ * Promise = restful.removeById(Object data);
  */
 Restful.prototype.removeById = function(id){
   return this._removeById(id);
 };
 
 /**
- * removeById
- *
- * Promise = restful.remove(Object data);
- */
-Restful.prototype.remove = function(data){
-  return this._remove(data);
-};
-
-/**
  * byId
  *
+ * Promise = restful.byId(Number id);
  * Promise = restful.byId(Object data);
  */
 Restful.prototype.byId = function(id){
@@ -197,26 +222,12 @@ Restful.prototype.byId = function(id){
 };
 
 /**
- * get, find
+ * find
  *
- * Promise = restful.get(String path, Object query);
- * Promise = restful.get(String path);
- * Promise = restful.get(Object query);
+ * Promise = restful.find(Object query);
  */
-Restful.prototype.get = function(path, query){
-  return this.req.get.apply(this.req, arguments);
-};
-Restful.prototype.find = function(path, query){
-  return this.req.get.apply(this.req, arguments);
-};
-
-/**
- * hasId
- *
- * Boolean = restful.hasId(Object data);
- */
-Restful.prototype.hasId = function(data){
-  return this._hasId(data);
+Restful.prototype.find = function(query){
+  return this._find(query);
 };
 
 /**
@@ -229,12 +240,23 @@ Restful.prototype.save = function(data){
 };
 
 /**
+ * get
+ *
+ * Promise = restful.get(String path, Object query);
+ * Promise = restful.get(String path);
+ * Promise = restful.get(Object query);
+ */
+Restful.prototype.get = function(){
+  return this.req.get.apply(this.req, arguments);
+};
+
+/**
  * post
  *
  * Promise = restful.post(Object data);
  */
-Restful.prototype.post = function(path, data){
-  return this.req.post(path, data);
+Restful.prototype.post = function(){
+  return this.req.post.apply(this.req, arguments);
 };
 
 /**
@@ -242,8 +264,17 @@ Restful.prototype.post = function(path, data){
  *
  * Promise = restful.put(Object data);
  */
-Restful.prototype.put = function(path, data){
-  return this.req.put(path, data);
+Restful.prototype.put = function(){
+  return this.req.put.apply(this.req, arguments);
+};
+
+/**
+ * remove
+ *
+ * Promise = restful.remove(Object data);
+ */
+Restful.prototype.remove = function(){
+ return this.req.remove.apply(this.req, arguments);
 };
 
 module.exports = Restful;
