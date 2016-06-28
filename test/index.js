@@ -214,6 +214,20 @@ describe('restful', function(){
 			})
 			.catch(done);
 		});
+		it('should return rejected Promise, If id method throws a error.', function(done){
+			ThrowIdError.update({id: 12345, username: 'taro'})
+			.catch(function(err){
+				err.message.should.equal('id error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If id method return rejected Promise.', function(done){
+			RejectIdError.update({id: 12345, username: 'taro'})
+			.catch(function(err){
+				err.message.should.equal('id error');
+				done();
+			});
+		});
 		it('should return rejected Promise, If validate method throws a error.', function(done){
 			ThrowValidationError.update({})
 			.then(done)
