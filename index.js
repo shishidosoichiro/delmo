@@ -4,6 +4,8 @@ var defaultsDeep = require('lodash/defaultsDeep');
 var isEqual = require('lodash/isEqual');
 var head = require('lodash/head');
 var spread = require('lodash/spread');
+var cloneDeep = require('lodash/cloneDeep');
+var get = require('lodash/fp/get');
 var flow = require('flow');
 
 /**
@@ -58,9 +60,9 @@ var defaults = {
     return data['id'];
   },
   validate: noop,
-  serialize: noop,
+  serialize: cloneDeep,
   deserialize: noop,
-  response: noop,
+  response: get('body'),
   bind: true,
   req: {
     get: reject('\'req.get\' is not implemented method.'),
@@ -85,6 +87,8 @@ var Restful = function(options){
   var serialize = options.serialize;
   var deserialize = options.deserialize;
   var response = options.response;
+  var modelize = options.modelize || this.modelize.bind(this);
+  var demodelize = options.demodelize || this.demodelize.bind(this);
 
   // bind
   if (options.bind) {
@@ -114,6 +118,7 @@ var Restful = function(options){
     resolve,
     validate,
     serialize,
+    demodelize,
     req.post,
     response
   );
@@ -124,7 +129,8 @@ var Restful = function(options){
       id,
       flow(
         validate,
-        serialize
+        serialize,
+        demodelize
       )
     ),
     spread(req.put),
@@ -147,6 +153,7 @@ var Restful = function(options){
     ),
     req.get,
     response,
+    modelize,
     deserialize
   );
 
@@ -154,18 +161,24 @@ var Restful = function(options){
     resolve,
     req.get,
     response,
-    deserialize
+    function(list){
+      if (!(list instanceof Array)) throw new Error('a response is not a array.');
+      return list.map(modelize).map(deserialize)
+    },
+    Promise.all.bind(Promise)
   );
 
   this._save = whether(this.hasId,
     flow(
       resolve,
       validate,
-      parallel(serialize, this.byId),
+      parallel(noop, flow(this.byId, demodelize)),
       whether(spread(isEqual),
         reject('same object.'),
         flow(
           head,
+          serialize,
+          demodelize,
           parallel(id, noop),
           spread(req.put),
           response
@@ -183,6 +196,28 @@ var Restful = function(options){
  */
 Restful.prototype.hasId = function(data){
   return this._hasId(data);
+};
+
+/**
+ * modelize
+ *
+ */
+Restful.prototype.modelize = function(data){
+  if (!data) return data;
+  data.insert = this.insert.bind(this, data);
+  data.update = this.update.bind(this, data);
+  data.remove = this.removeById.bind(this, data);
+  data.save = this.save.bind(this, data);
+  return data;
+};
+
+Restful.prototype.demodelize = function(data){
+  if (!data) return data;
+  delete data.insert;
+  delete data.update;
+  delete data.remove;
+  delete data.save;
+  return data;
 };
 
 /**

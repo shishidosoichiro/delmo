@@ -123,7 +123,7 @@ describe('restful', function(){
 			new Restful({
 				req: _.defaults({post: function(data){
 					data.should.deep.equal(user);
-					return data;
+					return {body: data};
 				}}, stub),
 				validate: function(data){
 					data.should.deep.equal(user);
@@ -196,7 +196,7 @@ describe('restful', function(){
 				req: _.defaults({put: function(id, data){
 					id.should.deep.equal(user.id);
 					data.should.deep.equal(user);
-					return data;
+					return {body: data};
 				}}, stub),
 				validate: function(data){
 					data.should.deep.equal(user);
@@ -280,7 +280,7 @@ describe('restful', function(){
 			var user = {id: 12345, username: 'taro'};
 			new Restful({
 				req: _.defaults({remove: function(id){
-					return user;
+					return {body: user};
 				}}, stub)
 			})
 			.removeById(user.id)
@@ -310,7 +310,7 @@ describe('restful', function(){
 			var user = {id: 12345, username: 'taro'};
 			new Restful({
 				req: _.defaults({remove: function(id){
-					return user;
+					return {body: user};
 				}}, stub)
 			})
 			.removeById(user)
@@ -325,7 +325,7 @@ describe('restful', function(){
 		it('should execute req.get and deserialize', function(done){
 			new Restful({
 				req: _.defaults({get: function(id){
-					return {id: id, username: 'taro'};
+					return {body: {id: id, username: 'taro'}};
 				}}, stub)
 			})
 			.byId(123456)
@@ -338,7 +338,7 @@ describe('restful', function(){
 		it('should execute req.get.', function(done){
 			new Restful({
 				req: _.defaults({get: function(id){
-					return {id: id, username: 'taro'};
+					return {body: {id: id, username: 'taro'}};
 				}}, stub)
 			})
 			.byId({id: 123456})
@@ -394,6 +394,27 @@ describe('restful', function(){
 		});
 	});
 	describe('#find', function(){
+		var NotArrayError = new Restful({
+			req: _.defaults({get: function(id){
+				return {body: {id: id, username: 'taro'}};
+			}}, stub)
+		});
+		var ThrowDeserializationError = new Restful({
+			req: _.defaults({get: function(id){
+				return {body: [{id: id, username: 'taro'}]};
+			}}, stub),
+			deserialize: function(data){
+				throw new Error('deserialization error');
+			}
+		});
+		var RejectDeserializationError = new Restful({
+			req: _.defaults({get: function(id){
+				return {body: [{id: id, username: 'taro'}]};
+			}}, stub),
+			deserialize: function(data){
+				return Promise.reject(new Error('deserialization error'));
+			}
+		});
 		it('should return rejected Promise, If get method throws a error.', function(done){
 			ThrowGetError.find({q: 'taro'})
 			.catch(function(err){
@@ -405,6 +426,13 @@ describe('restful', function(){
 			RejectGetError.find({q: 'taro'})
 			.catch(function(err){
 				err.message.should.equal('get error');
+				done();
+			});
+		});
+		it('should return rejected Promise, If get method return res that does not have an array.', function(done){
+			NotArrayError.find({q: 'taro'})
+			.catch(function(err){
+				err.message.should.equal('a response is not a array.');
 				done();
 			});
 		});
@@ -539,13 +567,13 @@ describe('restful', function(){
 				req: _.defaults({
 					get: function(id){
 						id.should.equal(2468);
-						return {id: id, username:'a_different_name'};
+						return {body: {id: id, username:'a_different_name'}};
 					},
 					put: function(id, data){
 						id.should.equal(2468);
 						data.id.should.equal(2468);
 						data.username.should.equal('a_name');
-						return data;
+						return {body: data};
 					}
 				}, stub)
 			})
@@ -562,7 +590,7 @@ describe('restful', function(){
 				req: _.defaults({
 					get: function(id){
 						id.should.equal(2468);
-						return {id: 2468, username: 'a_name'};
+						return {body: {id: 2468, username: 'a_name'}};
 					}
 				}, stub)
 			})
