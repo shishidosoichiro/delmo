@@ -69,6 +69,12 @@ var defaults = {
     post: reject('\'req.post\' is not implemented method.'),
     put: reject('\'req.put\' is not implemented method.'),
     remove: reject('\'req.remove\' is not implemented method.')
+  },
+  find: {
+    deserialize: function(body){
+      if (!(body instanceof Array)) throw new Error('a response is not a array.');
+      return body.map(this.options.modelize).map(this.options.deserialize)
+    }
   }
 };
 
@@ -87,8 +93,8 @@ var Restful = function(options){
   var serialize = options.serialize;
   var deserialize = options.deserialize;
   var response = options.response;
-  var modelize = options.modelize || this.modelize.bind(this);
-  var demodelize = options.demodelize || this.demodelize.bind(this);
+  var modelize = options.modelize = options.modelize || this.modelize.bind(this);
+  var demodelize = options.demodelize = options.demodelize || this.demodelize.bind(this);
 
   // bind
   if (options.bind) {
@@ -161,10 +167,7 @@ var Restful = function(options){
     resolve,
     req.get,
     response,
-    function(list){
-      if (!(list instanceof Array)) throw new Error('a response is not a array.');
-      return list.map(modelize).map(deserialize)
-    },
+    options.find.deserialize,
     Promise.all.bind(Promise)
   );
 
