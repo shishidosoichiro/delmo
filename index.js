@@ -1,5 +1,6 @@
 'use strict';
 
+var util = require('util');
 var defaultsDeep = require('lodash/defaultsDeep');
 var isEqual = require('lodash/isEqual');
 var head = require('lodash/head');
@@ -52,6 +53,15 @@ var log = function(data){
   return data;
 };
 
+function InvalidStatusException(res){
+  var message = `Invalid status. ${res.statusCode}: ${res.statusMessage}`;
+  Error.call(this, message);
+  this.message = message;
+  this.statusCode = res.statusCode;
+  this.statusMessage = res.statusMessage;
+}
+util.inherits(InvalidStatusException, Error);
+
 /**
  * default setting
  */
@@ -62,7 +72,11 @@ var defaults = {
   validate: noop,
   serialize: cloneDeep,
   deserialize: noop,
-  response: get('body'),
+  response: function(res){
+  	return res.body;
+    if (res.statusCode !== 200) throw new InvalidStatusException(res);
+    else return res.body;
+  },
   bind: true,
   req: {
     get: reject('\'req.get\' is not implemented method.'),
@@ -81,7 +95,7 @@ var defaults = {
 /**
  * Constructor
  */
-var Restful = function(options){
+function Restful(options){
   if (!(this instanceof Restful)) return new Restful(options);
 
   options = defaultsDeep(options || {}, defaults);
@@ -175,7 +189,14 @@ var Restful = function(options){
     flow(
       resolve,
       validate,
-      parallel(noop, flow(this.byId, demodelize)),
+      parallel(noop, function(data){
+        return this.byId(data)
+        .catch(function(err){
+          if (err instanceof InvalidStatusException && err.statusCode === 404) return this.insert(data);
+          else throw err;
+        })
+        .then(demodelize);
+      }),
       whether(spread(isEqual),
         reject('same object.'),
         flow(
@@ -317,4 +338,6 @@ Restful.prototype.remove = function(){
  return this.req.remove.apply(this.req, arguments);
 };
 
+Restful.defaults = defaults;
+Restful.InvalidStatusException = InvalidStatusException;
 module.exports = Restful;

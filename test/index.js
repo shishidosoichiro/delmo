@@ -8,15 +8,15 @@ var _ = require('lodash');
 
 var Restful = require('../');
 
-var noop = function(arg){
-  return arg;
+var success = function(arg){
+  return {statusCode: 200, body: arg};
 };
 
 var stub = {
-  post: noop,
-  put: noop,
-  get: noop,
-  remove: noop
+  post: success,
+  put: success,
+  get: success,
+  remove: success
 };
 
 describe('restful', function(){
@@ -45,13 +45,17 @@ describe('restful', function(){
     }
   });
   var ThrowDeserializationError = new Restful({
-    req: stub,
+    req: _.defaults({get: function(data){
+      return {statusCode: 200, body: {id: data}}
+    }}, stub),
     deserialize: function(data){
       throw new Error('deserialization error');
     }
   });
   var RejectDeserializationError = new Restful({
-    req: stub,
+    req: _.defaults({get: function(data){
+      return {statusCode: 200, body: {id: data}}
+    }}, stub),
     deserialize: function(data){
       return Promise.reject(new Error('deserialization error'));
     }
@@ -67,14 +71,24 @@ describe('restful', function(){
     }}, stub)
   });
   var ThrowPutError = new Restful({
-    req: _.defaults({put: function(){
-      throw new Error('put error');
-    }}, stub)
+    req: _.defaults({
+      put: function(){
+        throw new Error('put error');
+      },
+      get: function(data){
+        return {statusCode: 200, body: {id: data, name: 'no name'}}
+      }
+    }, stub)
   });
   var RejectPutError = new Restful({
-    req: _.defaults({put: function(){
-      return Promise.reject(new Error('put error'));
-    }}, stub)
+    req: _.defaults({
+      put: function(){
+	      return Promise.reject(new Error('put error'));
+      },
+      get: function(data){
+        return {statusCode: 200, body: {id: data, name: 'no name'}}
+      }
+    }, stub)
   });
   var ThrowRemoveError = new Restful({
     req: _.defaults({remove: function(){
@@ -123,7 +137,7 @@ describe('restful', function(){
       new Restful({
         req: _.defaults({post: function(data){
           data.should.deep.equal(user);
-          return {body: data};
+          return {statusCode: 200, body: data};
         }}, stub),
         validate: function(data){
           data.should.deep.equal(user);
@@ -196,7 +210,7 @@ describe('restful', function(){
         req: _.defaults({put: function(id, data){
           id.should.deep.equal(user.id);
           data.should.deep.equal(user);
-          return {body: data};
+          return {statusCode: 200, body: data};
         }}, stub),
         validate: function(data){
           data.should.deep.equal(user);
@@ -280,7 +294,7 @@ describe('restful', function(){
       var user = {id: 12345, username: 'taro'};
       new Restful({
         req: _.defaults({remove: function(id){
-          return {body: user};
+          return {statusCode: 200, body: user};
         }}, stub)
       })
       .removeById(user.id)
@@ -310,7 +324,7 @@ describe('restful', function(){
       var user = {id: 12345, username: 'taro'};
       new Restful({
         req: _.defaults({remove: function(id){
-          return {body: user};
+          return {statusCode: 200, body: user};
         }}, stub)
       })
       .removeById(user)
@@ -325,7 +339,7 @@ describe('restful', function(){
     it('should execute req.get and deserialize', function(done){
       new Restful({
         req: _.defaults({get: function(id){
-          return {body: {id: id, username: 'taro'}};
+          return {statusCode: 200, body: {id: id, username: 'taro'}};
         }}, stub),
         deserialize: function(data){
           data.deserialized = true;
@@ -343,7 +357,7 @@ describe('restful', function(){
     it('should execute req.get.', function(done){
       new Restful({
         req: _.defaults({get: function(id){
-          return {body: {id: id, username: 'taro'}};
+          return {statusCode: 200, body: {id: id, username: 'taro'}};
         }}, stub)
       })
       .byId({id: 123456})
@@ -406,7 +420,7 @@ describe('restful', function(){
     });
     var ThrowDeserializationError = new Restful({
       req: _.defaults({get: function(id){
-        return {body: [{id: id, username: 'taro'}]};
+        return {statusCode: 200, body: [{id: id, username: 'taro'}]};
       }}, stub),
       deserialize: function(data){
         throw new Error('deserialization error');
@@ -414,7 +428,7 @@ describe('restful', function(){
     });
     var RejectDeserializationError = new Restful({
       req: _.defaults({get: function(id){
-        return {body: [{id: id, username: 'taro'}]};
+        return {statusCode: 200, body: [{id: id, username: 'taro'}]};
       }}, stub),
       deserialize: function(data){
         return Promise.reject(new Error('deserialization error'));
@@ -426,7 +440,7 @@ describe('restful', function(){
       new Restful({
         req: _.defaults({get: function(query){
           query.should.deep.equal(data)
-          return {body: list};
+          return {statusCode: 200, body: list};
         }}, stub)
       })
       .find(data)
