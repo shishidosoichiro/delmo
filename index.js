@@ -73,9 +73,25 @@ var defaults = {
   serialize: cloneDeep,
   deserialize: noop,
   response: function(res){
-  	return res.body;
+    return res.body;
     if (res.statusCode !== 200) throw new InvalidStatusException(res);
     else return res.body;
+  },
+  modelize: function(data){
+    if (!data) return data;
+    data.insert = this.insert.bind(this, data);
+    data.update = this.update.bind(this, data);
+    data.remove = this.removeById.bind(this, data);
+    data.save = this.save.bind(this, data);
+    return data;
+  },
+  demodelize: function(data){
+    if (!data) return data;
+    delete data.insert;
+    delete data.update;
+    delete data.remove;
+    delete data.save;
+    return data;
   },
   bind: true,
   req: {
@@ -87,7 +103,7 @@ var defaults = {
   find: {
     deserialize: function(body){
       if (!(body instanceof Array)) throw new Error('a response is not a array.');
-      return body.map(this.options.modelize).map(this.options.deserialize)
+      return Promise.all(body.map(flow(this.options.modelize, this.options.deserialize), this));
     }
   }
 };
@@ -98,17 +114,10 @@ var defaults = {
 function Restful(options){
   if (!(this instanceof Restful)) return new Restful(options);
 
-  options = defaultsDeep(options || {}, defaults);
+  options = defaultsDeep({}, options || {}, defaults);
 
   this.options = options;
-  var req = this.req = options.req;
-  var id = options.id;
-  var validate = options.validate;
-  var serialize = options.serialize;
-  var deserialize = options.deserialize;
-  var response = options.response;
-  var modelize = options.modelize = options.modelize || this.modelize.bind(this);
-  var demodelize = options.demodelize = options.demodelize || this.demodelize.bind(this);
+  this.req = options.req;
 
   // bind
   if (options.bind) {
@@ -122,95 +131,6 @@ function Restful(options){
     this.hasId = this.hasId.bind(this);
     this.save = this.save.bind(this);
   }
-
-  // id is a number gt 0, or is a string except ''
-  this._hasId = flow(
-    id,
-    function(id){
-      if (id === undefined)                   return false;
-      if (typeof id === 'number' && id > 0)   return true;
-      if (typeof id === 'string' && id != '') return true;
-                                              return false;
-    }
-  );
-
-  this._insert = flow(
-    resolve,
-    validate,
-    serialize,
-    demodelize,
-    req.post,
-    response
-  );
-
-  this._update = flow(
-    resolve,
-    parallel(
-      id,
-      flow(
-        validate,
-        serialize,
-        demodelize
-      )
-    ),
-    spread(req.put),
-    response
-  );
-
-  this._removeById = flow(
-    resolve,
-    whether(this.hasId,
-      id
-    ),
-    req.remove,
-    response
-  );
-
-  this._byId = flow(
-    resolve,
-    whether(this.hasId,
-      id
-    ),
-    req.get,
-    response,
-    modelize,
-    deserialize
-  );
-
-  this._find = flow(
-    resolve,
-    req.get,
-    response,
-    options.find.deserialize,
-    Promise.all.bind(Promise)
-  );
-
-  this._save = whether(this.hasId,
-    flow(
-      resolve,
-      validate,
-      parallel(noop, function(data){
-        return this.byId(data)
-        .catch(function(err){
-          if (err instanceof InvalidStatusException && err.statusCode === 404) return this.insert(data);
-          else throw err;
-        })
-        .then(demodelize);
-      }),
-      whether(spread(isEqual),
-        reject('same object.'),
-        flow(
-          head,
-          serialize,
-          demodelize,
-          parallel(id, noop),
-          spread(req.put),
-          response
-        )
-      )
-    ),
-    this.insert
-  );
 };
 
 /**
@@ -219,29 +139,17 @@ function Restful(options){
  * Boolean = restful.hasId(Object data);
  */
 Restful.prototype.hasId = function(data){
-  return this._hasId(data);
-};
-
-/**
- * modelize
- *
- */
-Restful.prototype.modelize = function(data){
-  if (!data) return data;
-  data.insert = this.insert.bind(this, data);
-  data.update = this.update.bind(this, data);
-  data.remove = this.removeById.bind(this, data);
-  data.save = this.save.bind(this, data);
-  return data;
-};
-
-Restful.prototype.demodelize = function(data){
-  if (!data) return data;
-  delete data.insert;
-  delete data.update;
-  delete data.remove;
-  delete data.save;
-  return data;
+  var options = defaultsDeep({}, this.options.hasId || {}, this.options);
+  return flow(
+    options.id,
+    // id is a number gt 0, or is a string except ''
+    function(id){
+      if (id === undefined)                   return false;
+      if (typeof id === 'number' && id > 0)   return true;
+      if (typeof id === 'string' && id != '') return true;
+                                              return false;
+    }
+  ).call(this, data);
 };
 
 /**
@@ -250,7 +158,15 @@ Restful.prototype.demodelize = function(data){
  * Promise = restful.insert(Object data);
  */
 Restful.prototype.insert = function(data){
-  return this._insert(data);
+  var options = defaultsDeep({}, this.options.insert || {}, this.options);
+  return flow(
+    resolve,
+    options.validate,
+    options.serialize,
+    options.demodelize,
+    this.req.post,
+    options.response
+  ).call(this, data);
 };
 
 /**
@@ -259,7 +175,20 @@ Restful.prototype.insert = function(data){
  * Promise = restful.update(Object data);
  */
 Restful.prototype.update = function(data){
-  return this._update(data);
+  var options = defaultsDeep({}, this.options.update || {}, this.options);
+  return flow(
+    resolve,
+    parallel(
+      options.id,
+      flow(
+        options.validate,
+        options.serialize,
+        options.demodelize
+      )
+    ),
+    spread(this.req.put),
+    options.response
+  ).call(this, data);
 };
 
 /**
@@ -268,8 +197,14 @@ Restful.prototype.update = function(data){
  * Promise = restful.removeById(Number id);
  * Promise = restful.removeById(Object data);
  */
-Restful.prototype.removeById = function(id){
-  return this._removeById(id);
+Restful.prototype.removeById = function(data){
+  var options = defaultsDeep({}, this.options.removeById || {}, this.options);
+  return flow(
+    resolve,
+    whether(this.hasId, options.id),
+    this.req.remove,
+    options.response
+  ).call(this, data);
 };
 
 /**
@@ -278,8 +213,16 @@ Restful.prototype.removeById = function(id){
  * Promise = restful.byId(Number id);
  * Promise = restful.byId(Object data);
  */
-Restful.prototype.byId = function(id){
-  return this._byId(id);
+Restful.prototype.byId = function(data){
+  var options = defaultsDeep({}, this.options.byId || {}, this.options);
+  return flow(
+    resolve,
+    whether(this.hasId, options.id),
+    this.req.get,
+    options.response,
+    options.modelize,
+    options.deserialize
+  ).call(this, data);
 };
 
 /**
@@ -287,8 +230,14 @@ Restful.prototype.byId = function(id){
  *
  * Promise = restful.find(Object query);
  */
-Restful.prototype.find = function(query){
-  return this._find(query);
+Restful.prototype.find = function(data){
+  var options = defaultsDeep({}, this.options.find || {}, this.options);
+  return flow(
+    resolve,
+    this.req.get,
+    options.response,
+    options.deserialize
+  ).call(this, data);
 };
 
 /**
@@ -297,7 +246,33 @@ Restful.prototype.find = function(query){
  * Promise = restful.save(Object data);
  */
 Restful.prototype.save = function(data){
-  return this._save(data);
+  var options = defaultsDeep({}, this.options.update || {}, this.options);
+  return whether(this.hasId,
+    flow(
+      resolve,
+      options.validate,
+      parallel(noop, function(data){
+        return this.byId(data)
+        .catch(function(err){
+          if (err instanceof InvalidStatusException && err.statusCode === 404) return this.insert(data);
+          else throw err;
+        }.bind(this))
+        .then(options.demodelize);
+      }),
+      whether(spread(isEqual),
+        reject('same object.'),
+        flow(
+          head,
+          options.serialize,
+          options.demodelize,
+          parallel(options.id, noop),
+          spread(this.req.put),
+          options.response
+        )
+      )
+    ),
+    this.insert
+  ).call(this, data);
 };
 
 /**
