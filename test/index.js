@@ -16,7 +16,7 @@ var stub = {
   post: success,
   put: success,
   get: success,
-  remove: success
+  delete: success
 };
 
 describe('restful', function(){
@@ -91,13 +91,13 @@ describe('restful', function(){
     }, stub)
   });
   var ThrowRemoveError = new Restful({
-    req: _.defaults({remove: function(){
-      throw new Error('remove error');
+    req: _.defaults({delete: function(){
+      throw new Error('delete error');
     }}, stub)
   });
   var RejectRemoveError = new Restful({
-    req: _.defaults({remove: function(){
-      return Promise.reject(new Error('remove error'));
+    req: _.defaults({delete: function(){
+      return Promise.reject(new Error('delete error'));
     }}, stub)
   });
   var ThrowGetError = new Restful({
@@ -289,45 +289,45 @@ describe('restful', function(){
       });
     });
   });
-  describe('#removeById(Number)', function(){
-    it('should execute req.remove.', function(done){
+  describe('#deleteById(Number)', function(){
+    it('should execute req.delete.', function(done){
       var user = {id: 12345, username: 'taro'};
       new Restful({
-        req: _.defaults({remove: function(id){
+        req: _.defaults({delete: function(id){
           return {statusCode: 200, body: user};
         }}, stub)
       })
-      .removeById(user.id)
+      .deleteById(user.id)
       .then(function(data){
         data.should.deep.equal(user);
         done();
       })
       .catch(done);
     });
-    it('should return rejected Promise, If remove method throws a error.', function(done){
-      ThrowRemoveError.removeById(12345)
+    it('should return rejected Promise, If delete method throws a error.', function(done){
+      ThrowRemoveError.deleteById(12345)
       .catch(function(err){
-        err.message.should.equal('remove error');
+        err.message.should.equal('delete error');
         done();
       });
     });
-    it('should return rejected Promise, If remove method return rejected Promise.', function(done){
-      RejectRemoveError.removeById(12345)
+    it('should return rejected Promise, If delete method return rejected Promise.', function(done){
+      RejectRemoveError.deleteById(12345)
       .catch(function(err){
-        err.message.should.equal('remove error');
+        err.message.should.equal('delete error');
         done();
       });
     });
   });
-  describe('#removeById(Object)', function(){
-    it('should execute req.remove.', function(done){
+  describe('#deleteById(Object)', function(){
+    it('should execute req.delete.', function(done){
       var user = {id: 12345, username: 'taro'};
       new Restful({
-        req: _.defaults({remove: function(id){
+        req: _.defaults({delete: function(id){
           return {statusCode: 200, body: user};
         }}, stub)
       })
-      .removeById(user)
+      .deleteById(user)
       .then(function(data){
         data.should.deep.equal(user);
         done();

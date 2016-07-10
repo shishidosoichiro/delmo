@@ -81,7 +81,7 @@ var defaults = {
     if (!data) return data;
     data.insert = this.insert.bind(this, data);
     data.update = this.update.bind(this, data);
-    data.remove = this.removeById.bind(this, data);
+    data.delete = this.deleteById.bind(this, data);
     data.save = this.save.bind(this, data);
     return data;
   },
@@ -89,7 +89,7 @@ var defaults = {
     if (!data) return data;
     delete data.insert;
     delete data.update;
-    delete data.remove;
+    delete data.delete;
     delete data.save;
     return data;
   },
@@ -98,7 +98,7 @@ var defaults = {
     get: reject('\'req.get\' is not implemented method.'),
     post: reject('\'req.post\' is not implemented method.'),
     put: reject('\'req.put\' is not implemented method.'),
-    remove: reject('\'req.remove\' is not implemented method.')
+    delete: reject('\'req.delete\' is not implemented method.')
   },
   find: {
     deserialize: function(body){
@@ -123,8 +123,8 @@ function Restful(options){
   if (options.bind) {
     this.insert = this.insert.bind(this);
     this.update = this.update.bind(this);
-    this.removeById = this.removeById.bind(this);
-    this.remove = this.remove.bind(this);
+    this.deleteById = this.deleteById.bind(this);
+    this.delete = this.delete.bind(this);
     this.byId = this.byId.bind(this);
     this.get = this.get.bind(this);
     this.find = this.find.bind(this);
@@ -192,17 +192,17 @@ Restful.prototype.update = function(data){
 };
 
 /**
- * removeById
+ * deleteById
  *
- * Promise = restful.removeById(Number id);
- * Promise = restful.removeById(Object data);
+ * Promise = restful.deleteById(Number id);
+ * Promise = restful.deleteById(Object data);
  */
-Restful.prototype.removeById = function(data){
-  var options = defaultsDeep({}, this.options.removeById || {}, this.options);
+Restful.prototype.deleteById = function(data){
+  var options = defaultsDeep({}, this.options.deleteById || {}, this.options);
   return flow(
     resolve,
     whether(this.hasId, options.id),
-    this.req.remove,
+    this.req.delete,
     options.response
   ).call(this, data);
 };
@@ -305,12 +305,12 @@ Restful.prototype.put = function(){
 };
 
 /**
- * remove
+ * delete
  *
- * Promise = restful.remove(Object data);
+ * Promise = restful.delete(Object data);
  */
-Restful.prototype.remove = function(){
- return this.req.remove.apply(this.req, arguments);
+Restful.prototype.delete = function(){
+ return this.req.delete.apply(this.req, arguments);
 };
 
 Restful.defaults = defaults;
