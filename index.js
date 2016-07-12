@@ -68,6 +68,30 @@ function InvalidStatusException(res){
 }
 util.inherits(InvalidStatusException, Error);
 
+var demodelize = function(data){
+  data = cloneDeep(data);
+  if (typeof data === 'function') return;
+  if (typeof data === 'string'  ) return data;
+  if (typeof data === 'number'  ) return data;
+  if (typeof data === 'boolean' ) return data;
+
+  if (data instanceof Array) {
+    return data.filter(function(data){
+      return typeof data !== 'function'
+    })
+    .map(demodelize)
+  }
+  if (typeof data === 'object') {
+    var res = {};
+    for (var i in data) {
+      if (typeof data[i] === 'function') continue;
+      res[i] = demodelize(data[i]);
+    }
+    return res;
+  }
+  else return data;
+}
+
 /**
  * default setting
  */
@@ -87,14 +111,7 @@ var defaults = {
     if (!data) return data;
     return new this(data)
   },
-  demodelize: function(model){
-    if (!model) return model;
-    model = cloneDeep(model);
-    for (var name in instanceMethods) {
-      delete model[name];
-    }
-    return model;
-  },
+  demodelize: demodelize,
   bind: true,
   req: {
     get: reject('\'req.get\' is not implemented method.'),
