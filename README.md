@@ -28,3 +28,7 @@ User.getSomething();
 var user = new User({username: 'jordan'});
 user.save();
 ```
+
+```sh
+npm install https://github.com/shishidosoichiro/delmo
+```
