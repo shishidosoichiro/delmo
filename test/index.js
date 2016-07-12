@@ -6,7 +6,7 @@ var should = chai.should();
 
 var _ = require('lodash');
 
-var Restful = require('../');
+var Model = require('../');
 
 var success = function(arg){
   return {statusCode: 200, body: arg};
@@ -19,32 +19,32 @@ var stub = {
   delete: success
 };
 
-describe('restful', function(){
-  var ThrowValidationError = new Restful({
+describe('model', function(){
+  var ThrowValidationError = Model.inherits({
     req: stub,
     validate: function(data){
       throw new Error('validation error');
     }
   });
-  var RejectValidationError = new Restful({
+  var RejectValidationError = Model.inherits({
     req: stub,
     validate: function(data){
       return Promise.reject(new Error('validation error'));
     }
   });
-  var ThrowSerializationError = new Restful({
+  var ThrowSerializationError = Model.inherits({
     req: stub,
     serialize: function(data){
       throw new Error('serialization error');
     }
   });
-  var RejectSerializationError = new Restful({
+  var RejectSerializationError = Model.inherits({
     req: stub,
     serialize: function(data){
       return Promise.reject(new Error('serialization error'));
     }
   });
-  var ThrowDeserializationError = new Restful({
+  var ThrowDeserializationError = Model.inherits({
     req: _.defaults({get: function(data){
       return {statusCode: 200, body: {id: data}}
     }}, stub),
@@ -52,7 +52,7 @@ describe('restful', function(){
       throw new Error('deserialization error');
     }
   });
-  var RejectDeserializationError = new Restful({
+  var RejectDeserializationError = Model.inherits({
     req: _.defaults({get: function(data){
       return {statusCode: 200, body: {id: data}}
     }}, stub),
@@ -60,17 +60,17 @@ describe('restful', function(){
       return Promise.reject(new Error('deserialization error'));
     }
   });
-  var ThrowPostError = new Restful({
+  var ThrowPostError = Model.inherits({
     req: _.defaults({post: function(){
       throw new Error('post error');
     }}, stub)
   });
-  var RejectPostError = new Restful({
+  var RejectPostError = Model.inherits({
     req: _.defaults({post: function(){
       return Promise.reject(new Error('post error'));
     }}, stub)
   });
-  var ThrowPutError = new Restful({
+  var ThrowPutError = Model.inherits({
     req: _.defaults({
       put: function(){
         throw new Error('put error');
@@ -80,61 +80,61 @@ describe('restful', function(){
       }
     }, stub)
   });
-  var RejectPutError = new Restful({
+  var RejectPutError = Model.inherits({
     req: _.defaults({
       put: function(){
-	      return Promise.reject(new Error('put error'));
+        return Promise.reject(new Error('put error'));
       },
       get: function(data){
         return {statusCode: 200, body: {id: data, name: 'no name'}}
       }
     }, stub)
   });
-  var ThrowRemoveError = new Restful({
+  var ThrowRemoveError = Model.inherits({
     req: _.defaults({delete: function(){
       throw new Error('delete error');
     }}, stub)
   });
-  var RejectRemoveError = new Restful({
+  var RejectRemoveError = Model.inherits({
     req: _.defaults({delete: function(){
       return Promise.reject(new Error('delete error'));
     }}, stub)
   });
-  var ThrowGetError = new Restful({
+  var ThrowGetError = Model.inherits({
     req: _.defaults({get: function(){
       throw new Error('get error');
     }}, stub)
   });
-  var RejectGetError = new Restful({
+  var RejectGetError = Model.inherits({
     req: _.defaults({get: function(){
       return Promise.reject(new Error('get error'));
     }}, stub)
   });
-  var ThrowIdError = new Restful({
+  var ThrowIdError = Model.inherits({
     req: stub,
     id: function(){
       throw new Error('id error');
     }
   });
-  var RejectIdError = new Restful({
+  var RejectIdError = Model.inherits({
     req: stub,
     id: function(){
       return Promise.reject(new Error('id error'));
     }
   });
-  var NotFound = new Restful({
+  var NotFound = Model.inherits({
     req: _.defaults({get: function(id){
       return Promise.reject(new Error('not found'));
     }}, stub)
   });
   it('should return a instance', function(){
-    Restful().should.be.instanceof(Restful);
+    Model().should.be.instanceof(Model);
   });
 
   describe('#insert', function(){
     it('should validate, serialize and execute req.post', function(done){
       var user = {username: 'taro'};
-      new Restful({
+      Model.inherits({
         req: _.defaults({post: function(data){
           data.should.deep.equal(user);
           return {statusCode: 200, body: data};
@@ -206,7 +206,7 @@ describe('restful', function(){
   describe('#update', function(){
     it('should validate, serialize and execute req.put', function(done){
       var user = {id: 12345, username: 'taro'};
-      new Restful({
+      Model.inherits({
         req: _.defaults({put: function(id, data){
           id.should.deep.equal(user.id);
           data.should.deep.equal(user);
@@ -292,7 +292,7 @@ describe('restful', function(){
   describe('#deleteById(Number)', function(){
     it('should execute req.delete.', function(done){
       var user = {id: 12345, username: 'taro'};
-      new Restful({
+      Model.inherits({
         req: _.defaults({delete: function(id){
           return {statusCode: 200, body: user};
         }}, stub)
@@ -322,7 +322,7 @@ describe('restful', function(){
   describe('#deleteById(Object)', function(){
     it('should execute req.delete.', function(done){
       var user = {id: 12345, username: 'taro'};
-      new Restful({
+      Model.inherits({
         req: _.defaults({delete: function(id){
           return {statusCode: 200, body: user};
         }}, stub)
@@ -337,7 +337,7 @@ describe('restful', function(){
   });
   describe('#byId', function(){
     it('should execute req.get and deserialize', function(done){
-      new Restful({
+      Model.inherits({
         req: _.defaults({get: function(id){
           return {statusCode: 200, body: {id: id, username: 'taro'}};
         }}, stub),
@@ -355,7 +355,7 @@ describe('restful', function(){
       .catch(done);
     });
     it('should execute req.get.', function(done){
-      new Restful({
+      Model.inherits({
         req: _.defaults({get: function(id){
           return {statusCode: 200, body: {id: id, username: 'taro'}};
         }}, stub)
@@ -413,12 +413,12 @@ describe('restful', function(){
     });
   });
   describe('#find', function(){
-    var NotArrayError = new Restful({
+    var NotArrayError = Model.inherits({
       req: _.defaults({get: function(id){
         return {body: {id: id, username: 'taro'}};
       }}, stub)
     });
-    var ThrowDeserializationError = new Restful({
+    var ThrowDeserializationError = Model.inherits({
       req: _.defaults({get: function(id){
         return {statusCode: 200, body: [{id: id, username: 'taro'}]};
       }}, stub),
@@ -426,7 +426,7 @@ describe('restful', function(){
         throw new Error('deserialization error');
       }
     });
-    var RejectDeserializationError = new Restful({
+    var RejectDeserializationError = Model.inherits({
       req: _.defaults({get: function(id){
         return {statusCode: 200, body: [{id: id, username: 'taro'}]};
       }}, stub),
@@ -437,7 +437,7 @@ describe('restful', function(){
     it('should execute req.get.', function(done){
       var data = {word: 'abcd'}
       var list = [{name: 'abcd'}, {name: 'abdce'}]
-      new Restful({
+      Model.inherits({
         req: _.defaults({get: function(query){
           query.should.deep.equal(data)
           return {statusCode: 200, body: list};
@@ -445,7 +445,7 @@ describe('restful', function(){
       })
       .find(data)
       .then(function(result){
-        result.should.deep.equal(list);
+        result.map(Model.options.demodelize).should.deep.equal(list);
         done();
       })
       .catch(done);
@@ -490,7 +490,7 @@ describe('restful', function(){
   });
   describe('#hasId', function(){
     it('should execute id method.', function(){
-      var HasId = new Restful({
+      var HasId = Model.inherits({
         req: stub,
         id: function(data){
           return data['userId'];
@@ -598,7 +598,7 @@ describe('restful', function(){
       });
     });
     it('should execute put, If data is found and different.', function(done){
-      new Restful({
+      Model.inherits({
         req: _.defaults({
           get: function(id){
             id.should.equal(2468);
@@ -621,7 +621,7 @@ describe('restful', function(){
       .catch(done);
     });
     it('should reject with a error, If data is found but same.', function(done){
-      new Restful({
+      Model.inherits({
         req: _.defaults({
           get: function(id){
             id.should.equal(2468);

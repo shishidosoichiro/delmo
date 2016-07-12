@@ -1,11 +1,17 @@
 'use strict';
 
+module.exports = Model;
+
 var util = require('util');
 var defaultsDeep = require('lodash/defaultsDeep');
 var isEqual = require('lodash/isEqual');
 var head = require('lodash/head');
 var spread = require('lodash/spread');
 var cloneDeep = require('lodash/cloneDeep');
+var assign = require('lodash/assign');
+var bindAll = require('lodash/bindAll');
+var pick = require('lodash/pick');
+var keys = require('lodash/keys');
 var get = require('lodash/fp/get');
 var flow = require('flow');
 
@@ -79,19 +85,15 @@ var defaults = {
   },
   modelize: function(data){
     if (!data) return data;
-    data.insert = this.insert.bind(this, data);
-    data.update = this.update.bind(this, data);
-    data.delete = this.deleteById.bind(this, data);
-    data.save = this.save.bind(this, data);
-    return data;
+    return new this(data)
   },
-  demodelize: function(data){
-    if (!data) return data;
-    delete data.insert;
-    delete data.update;
-    delete data.delete;
-    delete data.save;
-    return data;
+  demodelize: function(model){
+    if (!model) return model;
+    model = cloneDeep(model);
+    for (var name in instanceMethods) {
+      delete model[name];
+    }
+    return model;
   },
   bind: true,
   req: {
@@ -108,38 +110,15 @@ var defaults = {
   }
 };
 
-/**
- * Constructor
- */
-function Restful(options){
-  if (!(this instanceof Restful)) return new Restful(options);
-
-  options = defaultsDeep({}, options || {}, defaults);
-
-  this.options = options;
-  this.req = options.req;
-
-  // bind
-  if (options.bind) {
-    this.insert = this.insert.bind(this);
-    this.update = this.update.bind(this);
-    this.deleteById = this.deleteById.bind(this);
-    this.delete = this.delete.bind(this);
-    this.byId = this.byId.bind(this);
-    this.get = this.get.bind(this);
-    this.find = this.find.bind(this);
-    this.hasId = this.hasId.bind(this);
-    this.save = this.save.bind(this);
-  }
-};
+var methods = {};
 
 /**
  * hasId
  *
- * Boolean = restful.hasId(Object data);
+ * Boolean = Model.hasId(Object data);
  */
-Restful.prototype.hasId = function(data){
-  var options = defaultsDeep({}, this.options.hasId || {}, this.options);
+methods.hasId = function(data){
+  var options = this.options.hasId;
   return flow(
     options.id,
     // id is a number gt 0, or is a string except ''
@@ -155,10 +134,10 @@ Restful.prototype.hasId = function(data){
 /**
  * insert
  *
- * Promise = restful.insert(Object data);
+ * Promise = Model.insert(Object data);
  */
-Restful.prototype.insert = function(data){
-  var options = defaultsDeep({}, this.options.insert || {}, this.options);
+methods.insert = function(data){
+  var options = this.options.insert;
   return flow(
     resolve,
     options.validate,
@@ -172,10 +151,10 @@ Restful.prototype.insert = function(data){
 /**
  * update
  *
- * Promise = restful.update(Object data);
+ * Promise = Model.update(Object data);
  */
-Restful.prototype.update = function(data){
-  var options = defaultsDeep({}, this.options.update || {}, this.options);
+methods.update = function(data){
+  var options = this.options.update;
   return flow(
     resolve,
     parallel(
@@ -194,11 +173,11 @@ Restful.prototype.update = function(data){
 /**
  * deleteById
  *
- * Promise = restful.deleteById(Number id);
- * Promise = restful.deleteById(Object data);
+ * Promise = Model.deleteById(Number id);
+ * Promise = Model.deleteById(Object data);
  */
-Restful.prototype.deleteById = function(data){
-  var options = defaultsDeep({}, this.options.deleteById || {}, this.options);
+methods.deleteById = function(data){
+  var options = this.options.deleteById;
   return flow(
     resolve,
     whether(this.hasId, options.id),
@@ -210,11 +189,11 @@ Restful.prototype.deleteById = function(data){
 /**
  * byId
  *
- * Promise = restful.byId(Number id);
- * Promise = restful.byId(Object data);
+ * Promise = Model.byId(Number id);
+ * Promise = Model.byId(Object data);
  */
-Restful.prototype.byId = function(data){
-  var options = defaultsDeep({}, this.options.byId || {}, this.options);
+methods.byId = function(data){
+  var options = this.options.byId;
   return flow(
     resolve,
     whether(this.hasId, options.id),
@@ -228,10 +207,10 @@ Restful.prototype.byId = function(data){
 /**
  * find
  *
- * Promise = restful.find(Object query);
+ * Promise = Model.find(Object query);
  */
-Restful.prototype.find = function(data){
-  var options = defaultsDeep({}, this.options.find || {}, this.options);
+methods.find = function(data){
+  var options = this.options.find;
   return flow(
     resolve,
     this.req.get,
@@ -243,10 +222,10 @@ Restful.prototype.find = function(data){
 /**
  * save
  *
- * Promise = restful.save(Object data);
+ * Promise = Model.save(Object data);
  */
-Restful.prototype.save = function(data){
-  var options = defaultsDeep({}, this.options.update || {}, this.options);
+methods.save = function(data){
+  var options = this.options.update;
   return whether(this.hasId,
     flow(
       resolve,
@@ -275,44 +254,121 @@ Restful.prototype.save = function(data){
   ).call(this, data);
 };
 
+var rawMethods = {};
+
 /**
  * get
  *
- * Promise = restful.get(String path, Object query);
- * Promise = restful.get(String path);
- * Promise = restful.get(Object query);
+ * Promise = Model.get(String path, Object query);
+ * Promise = Model.get(String path);
+ * Promise = Model.get(Object query);
  */
-Restful.prototype.get = function(){
+rawMethods.get = function(){
   return this.req.get.apply(this.req, arguments);
 };
 
 /**
  * post
  *
- * Promise = restful.post(Object data);
+ * Promise = Model.post(Object data);
  */
-Restful.prototype.post = function(){
+rawMethods.post = function(){
   return this.req.post.apply(this.req, arguments);
 };
 
 /**
  * put
  *
- * Promise = restful.put(Object data);
+ * Promise = Model.put(Object data);
  */
-Restful.prototype.put = function(){
+rawMethods.put = function(){
   return this.req.put.apply(this.req, arguments);
 };
 
 /**
  * delete
  *
- * Promise = restful.delete(Object data);
+ * Promise = Model.delete(Object data);
  */
-Restful.prototype.delete = function(){
+rawMethods.delete = function(){
  return this.req.delete.apply(this.req, arguments);
 };
 
-Restful.defaults = defaults;
-Restful.InvalidStatusException = InvalidStatusException;
-module.exports = Restful;
+var instanceMethods = pick(methods, ['insert', 'update', 'deleteById', 'byId', 'save']);
+
+/**
+ * Constructor
+ */
+function Model(data){
+  if (!(this instanceof Model)) return new Model(data);
+
+  assign(this, data);
+
+  // bind
+  if (this.Class.options.bind) {
+    methods.forEach(function(name){
+      this[name] = this[name].bind(this);
+    }.bind(this))
+  }
+}
+
+function Model(data){
+  if(!(this instanceof Model)) return new Model(data);
+
+  assign(this, data);
+  if (this.constructor.options.bind) 
+    bindAll(this, keys(instanceMethods));
+
+}
+
+Model.defaults = defaults;
+Model.InvalidStatusException = InvalidStatusException;
+
+/**
+ * extend
+ *
+ * Model = Model.inherits([Function constructor, ]Object options);
+ */
+Model.inherits = function(constructor, options){
+  if (typeof constructor !== 'function') {
+    options = constructor;
+    constructor = function ExtendedModel(data){
+      return Model.call(this, data)
+    }
+  }
+  util.inherits(constructor, Model);
+  assign(constructor, Model);
+
+  options = defaultsDeep({}, options || {}, defaults);
+  for (var name in methods) {
+    options[name] = defaultsDeep({}, options[name] || {}, options);
+  }
+
+  constructor.options = options;
+  constructor.req = options.req;
+  assign(constructor, methods);
+  assign(constructor, rawMethods);
+
+  // bind
+  if (options.bind)
+    bindAll(constructor, keys(methods).concat(keys(rawMethods)));
+
+  return constructor;
+}
+
+var options = defaultsDeep({}, defaults);
+for (var name in methods) {
+  options[name] = defaultsDeep({}, options[name] || {}, options);
+}
+Model.options = options;
+assign(Model, methods);
+assign(Model, rawMethods);
+
+/**
+ * instance methods
+ */
+for (var name in instanceMethods) {
+  Model.prototype[name] = function(){
+    return this.constructor[name](this);
+  };
+}
