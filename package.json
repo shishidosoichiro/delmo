@@ -1,5 +1,5 @@
 {
-  "name": "restful",
+  "name": "delmo",
   "version": "0.0.1",
   "description": "RESTful interface wrapper for http client app.",
   "main": "index.js",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shishidosoichiro/restful.git"
+    "url": "git+https://github.com/shishidosoichiro/delmo.git"
   },
   "keywords": [
     "RESTful",
@@ -20,9 +20,9 @@
   "author": "Soichiro Shishido",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/shishidosoichiro/restful/issues"
+    "url": "https://github.com/shishidosoichiro/delmo/issues"
   },
-  "homepage": "https://github.com/shishidosoichiro/restful#readme",
+  "homepage": "https://github.com/shishidosoichiro/delmo#readme",
   "dependencies": {
     "flow": "git+https://github.com/shishidosoichiro/flow.js.git",
     "lodash": "^4.13.1"

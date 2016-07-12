@@ -19,7 +19,7 @@ var stub = {
   delete: success
 };
 
-describe('model', function(){
+describe('delmo', function(){
   var ThrowValidationError = Model.inherits({
     req: stub,
     validate: function(data){
