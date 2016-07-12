@@ -1,6 +1,6 @@
 # delmo.js
-[![Build Status](https://travis-ci.org/shishidosoichiro/restful.svg?branch=master)](https://travis-ci.org/shishidosoichiro/restful)
-[![Coverage Status](https://coveralls.io/repos/github/shishidosoichiro/restful/badge.svg?branch=master)](https://coveralls.io/github/shishidosoichiro/restful?branch=master)
+[![Build Status](https://travis-ci.org/shishidosoichiro/delmo.svg?branch=master)](https://travis-ci.org/shishidosoichiro/delmo)
+[![Coverage Status](https://coveralls.io/repos/github/shishidosoichiro/delmo/badge.svg?branch=master)](https://coveralls.io/github/shishidosoichiro/delmo?branch=master)
 
 RESTful interface wrapper for http client.
 
@@ -9,7 +9,7 @@ RESTful interface wrapper for http client.
 var Model = require('delmo');
 
 var User = Model.inherits({
-	req: options.req.cd('user')
+	req: req.cd('user')
 });
 
 User.postSomething = function(data){
