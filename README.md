@@ -116,26 +116,26 @@ Tweet.save({tweet: 'hello.'});
 ## API
 
 - Constructor Methods
-  - Model Methods
+    - Model Methods
+        - save
+        - byId
+        - find
+        - deleteById
+        - insert
+        - update
+    - Inherit Methods
+        - inherits
+    - Raw HTTP Methods
+        - get
+        - post
+        - put
+        - delete
+- Instance Methods
     - save
     - byId
-    - find
     - deleteById
     - insert
     - update
-  - Inherit Methods
-    - inherits
-  - Raw HTTP Methods
-    - get
-    - post
-    - put
-    - delete
-- Instance Methods
-  - save
-  - byId
-  - deleteById
-  - insert
-  - update
 
 
 ## Memo

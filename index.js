@@ -71,6 +71,7 @@ util.inherits(InvalidStatusException, Error);
 var demodelize = function(data){
   data = cloneDeep(data);
   if (typeof data === 'function') return;
+  if (data === null             ) return null;
   if (typeof data === 'string'  ) return data;
   if (typeof data === 'number'  ) return data;
   if (typeof data === 'boolean' ) return data;
@@ -317,23 +318,10 @@ var instanceMethods = pick(methods, ['insert', 'update', 'deleteById', 'byId', '
  * Constructor
  */
 function Model(data){
-  if (!(this instanceof Model)) return new Model(data);
-
-  assign(this, data);
-
-  // bind
-  if (this.Class.options.bind) {
-    methods.forEach(function(name){
-      this[name] = this[name].bind(this);
-    }.bind(this))
-  }
-}
-
-function Model(data){
   if(!(this instanceof Model)) return new Model(data);
 
   assign(this, data);
-  if (this.constructor.options.bind) 
+  if (this.constructor.options.bind)
     bindAll(this, keys(instanceMethods));
 
 }
