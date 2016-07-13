@@ -335,16 +335,18 @@ Model.InvalidStatusException = InvalidStatusException;
  * Model = Model.inherits([Function constructor, ]Object options);
  */
 Model.inherits = function(constructor, options){
+  var Super = this;
   if (typeof constructor !== 'function') {
     options = constructor;
     constructor = function ExtendedModel(data){
-      return Model.call(this, data)
+      return Super.call(this, data)
     }
   }
-  util.inherits(constructor, Model);
-  assign(constructor, Model);
+  util.inherits(constructor, Super);
+  assign(constructor, Super);
 
-  options = defaultsDeep({}, options || {}, defaults);
+  options = defaultsDeep({}, options || {}, Super.rawOptions);
+  constructor.rawOptions = cloneDeep(options);
   for (var name in methods) {
     options[name] = defaultsDeep({}, options[name] || {}, options);
   }
@@ -362,6 +364,7 @@ Model.inherits = function(constructor, options){
 }
 
 var options = defaultsDeep({}, defaults);
+Model.rawOptions = cloneDeep(options);
 for (var name in methods) {
   options[name] = defaultsDeep({}, options[name] || {}, options);
 }
