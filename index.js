@@ -65,6 +65,7 @@ function InvalidStatusException(res){
   this.message = message;
   this.statusCode = res.statusCode;
   this.statusMessage = res.statusMessage;
+  this.response = res.res;
 }
 util.inherits(InvalidStatusException, Error);
 
@@ -92,14 +93,17 @@ var demodelize = function(data){
   }
   else return data;
 }
+var id = function(name){
+  return function(data){
+    return data[name];
+  };
+};
 
 /**
  * default setting
  */
 var defaults = {
-  id: function(data){
-    return data['id'];
-  },
+  id: id('id'),
   validate: noop,
   serialize: cloneDeep,
   deserialize: noop,
