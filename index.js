@@ -108,7 +108,6 @@ var defaults = {
   serialize: cloneDeep,
   deserialize: noop,
   response: function(res){
-    return res.body;
     if (res.statusCode !== 200) throw new InvalidStatusException(res);
     else return res.body;
   },
