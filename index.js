@@ -66,7 +66,7 @@ function InvalidStatusException(res){
   this.message = message;
   this.statusCode = res.statusCode;
   this.statusMessage = res.statusMessage;
-  this.response = res.res;
+  this.response = res;
 }
 util.inherits(InvalidStatusException, Error);
 

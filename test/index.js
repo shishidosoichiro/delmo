@@ -415,7 +415,7 @@ describe('delmo', function(){
   describe('#find', function(){
     var NotArrayError = Model.inherits({
       req: _.defaults({get: function(id){
-        return {body: {id: id, username: 'taro'}};
+        return {statusCode: 200, body: {id: id, username: 'taro'}};
       }}, stub)
     });
     var ThrowDeserializationError = Model.inherits({
@@ -466,6 +466,9 @@ describe('delmo', function(){
     });
     it('should return rejected Promise, If get method return res that does not have an array.', function(done){
       NotArrayError.find({q: 'taro'})
+      .then(function(data){
+      	console.log(data)
+      })
       .catch(function(err){
         err.message.should.equal('a response is not a array.');
         done();
@@ -602,13 +605,13 @@ describe('delmo', function(){
         req: _.defaults({
           get: function(id){
             id.should.equal(2468);
-            return {body: {id: id, username:'a_different_name'}};
+            return {statusCode: 200, body: {id: id, username:'a_different_name'}};
           },
           put: function(id, data){
             id.should.equal(2468);
             data.id.should.equal(2468);
             data.username.should.equal('a_name');
-            return {body: data};
+            return {statusCode: 200, body: data};
           }
         }, stub)
       })
@@ -625,7 +628,7 @@ describe('delmo', function(){
         req: _.defaults({
           get: function(id){
             id.should.equal(2468);
-            return {body: {id: 2468, username: 'a_name'}};
+            return {statusCode: 200, body: {id: 2468, username: 'a_name'}};
           }
         }, stub)
       })
