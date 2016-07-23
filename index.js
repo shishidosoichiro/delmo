@@ -3,6 +3,7 @@
 module.exports = Model;
 
 var util = require('util');
+var EventEmitter = require('events');
 var defaultsDeep = require('lodash/defaultsDeep');
 var isEqual = require('lodash/isEqual');
 var head = require('lodash/head');
@@ -323,12 +324,13 @@ var instanceMethods = pick(methods, ['insert', 'update', 'deleteById', 'byId', '
 function Model(data){
   if(!(this instanceof Model)) return new Model(data);
 
+  EventEmitter.call(this);
   assign(this, data);
   if (this.constructor.options.bind)
     bindAll(this, keys(instanceMethods));
 
 }
-
+util.inherits(Model, EventEmitter);
 Model.defaults = defaults;
 Model.InvalidStatusException = InvalidStatusException;
 
