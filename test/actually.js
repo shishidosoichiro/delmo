@@ -7,8 +7,16 @@ var should = chai.should();
 var Model = require('../');
 var Req = require('req');
 
+var crypto = require('crypto');
 var Datastore = require('nedb');
 var db = new Datastore();
+db.ensureIndex({ fieldName: 'id', unique: true });
+function uid (len) {
+  return crypto.randomBytes(Math.ceil(Math.max(8, len * 2)))
+    .toString('base64')
+    .replace(/[+\/]/g, '')
+    .slice(0, len);
+}
 
 var http = require('http');
 
@@ -24,6 +32,7 @@ var server = http.createServer();
 var router = new express.Router()
 .use(json)
 .post('/', function(req, res){
+  if (req.body && !req.body.id) req.body.id = uid(16);
   db.insert(req.body, function(err, data){
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     if (err) return res.status(500).send(err);
@@ -31,7 +40,7 @@ var router = new express.Router()
   });
 })
 .put('/:id', function(req, res){
-  db.update({_id: req.params.id}, req.body, {}, function(err, num){
+  db.update({id: req.params.id}, req.body, {}, function(err, num){
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     if (err) return res.status(500).send(err);
     if (num === 0) return res.status(404).send(`Data Not Found: ${JSON.stringify(req.body)}`);
@@ -39,7 +48,7 @@ var router = new express.Router()
   });
 })
 .delete('/:id', function(req, res){
-  db.remove({_id: req.params.id}, {}, function(err, num){
+  db.remove({id: req.params.id}, {}, function(err, num){
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     if (err) return res.status(500).send(err);
     if (num === 0) return res.status(404).send(`Data Not Found: ${JSON.stringify(req.body)}`);
@@ -47,7 +56,7 @@ var router = new express.Router()
   });
 })
 .get('/:id', function(req, res){
-  db.findOne({_id: req.params.id}, function(err, data){
+  db.findOne({id: req.params.id}, function(err, data){
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     if (err) return res.status(500).send(err);
     if (!data) return res.status(404).send(`Data Not Found: id = ${req.params.id}`);
@@ -75,10 +84,7 @@ function User(data){
   return Model.call(this, data)
 }
 Model.inherits(User, {
-  req: Req('http://localhost:3000/api/user'),
-  id: function(data){
-    return data['_id'];
-  }
+  req: Req('http://localhost:3000/api/user')
 });
 
 describe('actually', function(){
@@ -86,26 +92,26 @@ describe('actually', function(){
     var user = {username: 'user1', description: 'My name is user1.'};
     User.save(user)
     .then(function(data){
-      expect(data._id).not.to.be.empty;
+      expect(data.id).not.to.be.empty;
       data.url = 'http://user1.com';
       return data;
     })
     .then(User.save)
     .then(function(data){
-      expect(data._id).not.to.be.empty;
+      expect(data.id).not.to.be.empty;
       should.equal(data.url, 'http://user1.com');
       user = data;
-      return data._id;
+      return data.id;
     })
     .then(User.byId)
     .then(function(data){
-      expect(data._id).not.to.be.empty;
+      expect(data.id).not.to.be.empty;
       should.equal(data.url, 'http://user1.com');
       return data;
     })
     .then(User.deleteById)
     .then(function(){
-      return user._id;
+      return user.id;
     })
     .then(User.byId)
     .catch(function(err){
