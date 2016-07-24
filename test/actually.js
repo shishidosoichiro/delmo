@@ -10,9 +10,16 @@ var Req = require('req');
 var Datastore = require('nedb');
 var db = new Datastore();
 
+var http = require('http');
+
 var express = require('express');
 var bodyParser = require('body-parser');
 var json = bodyParser.json({ type: 'application/json' });
+
+var ws = require('ws');
+var WebSocketServer = ws.Server;
+
+var server = http.createServer();
 
 var router = new express.Router()
 .use(json)
@@ -55,9 +62,14 @@ var router = new express.Router()
   });
 })
 
+var path = '/api/user';
 var app = express()
-.use('/api/user', router)
-.listen(3000)
+.use(path, router)
+
+var wss = new WebSocketServer({server: server, path: path});
+
+server.on('request', app)
+.listen(3000);
 
 function User(data){
   return Model.call(this, data)
