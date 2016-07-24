@@ -71,7 +71,6 @@ function InvalidStatusException(res){
 util.inherits(InvalidStatusException, Error);
 
 var demodelize = function(data){
-  data = cloneDeep(data);
   if (typeof data === 'function') return;
   if (data === null             ) return null;
   if (typeof data === 'string'  ) return data;
@@ -87,6 +86,10 @@ var demodelize = function(data){
   if (typeof data === 'object') {
     var res = {};
     for (var i in data) {
+      if (i === '_events') continue;
+      if (i === '_eventsCount') continue;
+      if (i === '_maxListeners') continue;
+      if (i === 'domain') continue;
       if (typeof data[i] === 'function') continue;
       res[i] = demodelize(data[i]);
     }
