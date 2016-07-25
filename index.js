@@ -17,6 +17,7 @@ var keys = require('lodash/keys');
 var get = require('lodash/fp/get');
 var flow = require('flow');
 var WebSocket = require('ws/lib/WebSocket');
+var Readable = require('stream').Readable;
 
 /**
  * helper functions
@@ -105,8 +106,9 @@ var id = function(name){
   };
 };
 var setWebSocket = function(Constructor, name){
-  var ws = WebSocket(Constructor.req.url.cd(name).href);
-  ws.on('open', debug.bind(null, 'open WebSocket.'));
+  var url = Constructor.req.url.cd(name).href;
+  var ws = WebSocket(url);
+  ws.on('open', debug.bind(null, `open WebSocket. url: ${url}`));
   ws.on('message', function(string, flags){
     var data = JSON.parse(string);
     Constructor.emit(name, data);
@@ -330,6 +332,49 @@ rawMethods.delete = function(){
  return this.req.delete.apply(this.req, arguments);
 };
 
+var realtimeMethods = {};
+
+/**
+ * inserted
+ *
+ * Stream = Model.inserted();
+ */
+var EventStream = function(name){
+	if (!(this instanceof EventStream)) return new EventStream(name);
+	Readable.call(this, {});
+	this.name = name;
+};
+util.inherits(EventStream, Readable);
+
+EventStream.prototype._read = function(){
+	if (!this.ws) this._init();
+}
+EventStream.prototype._init = function(){
+  var url = this.req.url.cd(this.name).href;
+  var ws = WebSocket(url);
+  ws.on('open', debug.bind(null, `open WebSocket. url: ${url}`));
+  ws.on('message', function(string, flags){
+    var data = JSON.parse(string);
+    this.push(data);
+  }.bind(this))
+}
+EventStream.prototype._read = function(){
+	if (!this.ws) this._init()
+}
+var eventStream = function(name){
+  return function(){
+
+    var url = this.req.url.cd(name).href;
+    var ws = WebSocket(url);
+    ws.on('open', debug.bind(null, `open WebSocket. url: ${url}`));
+    ws.on('message', function(string, flags){
+      var data = JSON.parse(string);
+      this.emit(name, data);
+    }.bind(this))
+  }
+}
+
+
 var instanceMethods = pick(methods, ['insert', 'update', 'deleteById', 'byId', 'save']);
 
 /**
@@ -387,6 +432,7 @@ Model.inherits = function(Constructor, options){
     if (options.realtime === true || options.realtime.inserted) setWebSocket(Constructor, 'inserted');
     if (options.realtime === true || options.realtime.updated) setWebSocket(Constructor, 'updated');
     if (options.realtime === true || options.realtime.saved) setWebSocket(Constructor, 'saved');
+    if (options.realtime === true || options.realtime.deleted) setWebSocket(Constructor, 'deleted');
   }
 
   return Constructor;

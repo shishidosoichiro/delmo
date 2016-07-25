@@ -56,6 +56,7 @@ var router = new express.Router()
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     if (err) return res.status(500).send(err);
     if (num === 0) return res.status(404).send(`Data Not Found: ${JSON.stringify(req.body)}`);
+    wss.deleted.broadcast(req.params.id);
     res.send();
   });
 })
@@ -83,7 +84,8 @@ var wss = {
   main: new WebSocketServer({server: server, path: path}),
   inserted: new WebSocketServer({server: server, path: path + '/inserted'}),
   updated: new WebSocketServer({server: server, path: path + '/updated'}),
-  saved: new WebSocketServer({server: server, path: path + '/saved'})
+  saved: new WebSocketServer({server: server, path: path + '/saved'}),
+  deleted: new WebSocketServer({server: server, path: path + '/deleted'})
 }
 
 function assignBroadcast(wss) {
@@ -98,6 +100,7 @@ assignBroadcast(wss.main);
 assignBroadcast(wss.inserted);
 assignBroadcast(wss.updated);
 assignBroadcast(wss.saved);
+assignBroadcast(wss.deleted);
 
 server.on('request', app)
 .listen(3000);
