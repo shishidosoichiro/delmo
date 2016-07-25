@@ -326,6 +326,7 @@ var instanceMethods = pick(methods, ['insert', 'update', 'deleteById', 'byId', '
  */
 function Model(data){
   if(!(this instanceof Model)) return new Model(data);
+  if (!data) data = {};
 
   EventEmitter.call(this);
   assign(this, data);

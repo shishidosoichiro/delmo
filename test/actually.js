@@ -36,6 +36,8 @@ var router = new express.Router()
   db.insert(req.body, function(err, data){
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     if (err) return res.status(500).send(err);
+    wss.inserted.broadcast(data)
+    wss.saved.broadcast(data)
     res.send(data);
   });
 })
@@ -44,6 +46,8 @@ var router = new express.Router()
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     if (err) return res.status(500).send(err);
     if (num === 0) return res.status(404).send(`Data Not Found: ${JSON.stringify(req.body)}`);
+    wss.updated.broadcast(data)
+    wss.saved.broadcast(data)
     res.send(req.body);
   });
 })
@@ -75,7 +79,24 @@ var path = '/api/user';
 var app = express()
 .use(path, router)
 
-var wss = new WebSocketServer({server: server, path: path});
+var wss = {
+  main: new WebSocketServer({server: server, path: path}),
+  inserted: new WebSocketServer({server: server, path: path + '/inserted'}),
+  updated: new WebSocketServer({server: server, path: path + '/updated'}),
+  saved: new WebSocketServer({server: server, path: path + '/saved'})
+}
+
+function assignBroadcast(wss) {
+  wss.broadcast = function broadcast(data) {
+    wss.clients.forEach(function each(client) {
+      client.send(data);
+    });
+  };
+};
+assignBroadcast(wss.main);
+assignBroadcast(wss.inserted);
+assignBroadcast(wss.updated);
+assignBroadcast(wss.saved);
 
 server.on('request', app)
 .listen(3000);
@@ -84,7 +105,7 @@ function User(data){
   return Model.call(this, data)
 }
 Model.inherits(User, {
-  req: Req('http://localhost:3000/api/user')
+  req: Req('http://localhost:3000/api/user'),
 });
 
 describe('actually', function(){
@@ -119,5 +140,10 @@ describe('actually', function(){
       err.statusCode.should.equal(404)
     })
     .then(done, done)
+  })
+  it('should save, delete, and get from RESTful server.', function(done){
+    User.on('inserted', function(){
+
+    })
   })
 })
