@@ -46,8 +46,8 @@ var router = new express.Router()
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     if (err) return res.status(500).send(err);
     if (num === 0) return res.status(404).send(`Data Not Found: ${JSON.stringify(req.body)}`);
-    wss.updated.broadcast(data)
-    wss.saved.broadcast(data)
+    wss.updated.broadcast(req.body)
+    wss.saved.broadcast(req.body)
     res.send(req.body);
   });
 })
@@ -88,6 +88,7 @@ var wss = {
 
 function assignBroadcast(wss) {
   wss.broadcast = function broadcast(data) {
+    data = JSON.stringify(data);
     wss.clients.forEach(function each(client) {
       client.send(data);
     });
@@ -106,6 +107,7 @@ function User(data){
 }
 Model.inherits(User, {
   req: Req('http://localhost:3000/api/user'),
+  realtime: true
 });
 
 describe('actually', function(){
@@ -141,9 +143,33 @@ describe('actually', function(){
     })
     .then(done, done)
   })
-  it('should save, delete, and get from RESTful server.', function(done){
-    User.on('inserted', function(){
 
+  describe('#on(\'inserted\')', function(){
+    it('should receive inserted data.', function(done){
+      var user2 = {username: 'user2', description: 'My name is user2.'};
+      User.once('inserted', function(data){
+        should.equal(data.username, user2.username);
+        should.equal(data.description, user2.description);
+        done();
+      })
+      User.insert(user2)
+    })
+  })
+  describe('#on(\'updated\')', function(){
+    it('should receive updated data.', function(done){
+      var user2 = {username: 'user2', description: 'My name is user2.'};
+      User.once('updated', function(data){
+        should.equal(data.username, user2.username);
+        should.equal(data.description, user2.description);
+        should.equal(data.url, 'http://user2.com');
+        done();
+      })
+      User.insert(user2)
+      .then(function(data){
+        data.url = 'http://user2.com';
+        return data;
+      })
+      .then(User.save)
     })
   })
 })

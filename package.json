@@ -25,7 +25,8 @@
   "homepage": "https://github.com/shishidosoichiro/delmo#readme",
   "dependencies": {
     "flow": "git+https://github.com/shishidosoichiro/flow.js.git",
-    "lodash": "^4.13.1"
+    "lodash": "^4.13.1",
+    "ws": "^1.1.1"
   },
   "devDependencies": {
     "body-parser": "^1.15.2",
@@ -39,7 +40,6 @@
     "istanbul": "^0.4.4",
     "mocha": "^2.5.3",
     "nedb": "^1.8.0",
-    "req": "git+https://github.com/shishidosoichiro/req.git",
-    "ws": "^1.1.1"
+    "req": "git+https://github.com/shishidosoichiro/req.git"
   }
 }

@@ -3,6 +3,7 @@
 module.exports = Model;
 
 var util = require('util');
+var debug = util.debuglog('delmo');
 var EventEmitter = require('events');
 var defaultsDeep = require('lodash/defaultsDeep');
 var isEqual = require('lodash/isEqual');
@@ -15,6 +16,7 @@ var pick = require('lodash/pick');
 var keys = require('lodash/keys');
 var get = require('lodash/fp/get');
 var flow = require('flow');
+var WebSocket = require('ws/lib/WebSocket');
 
 /**
  * helper functions
@@ -102,11 +104,21 @@ var id = function(name){
     return data[name];
   };
 };
+var setWebSocket = function(Constructor, name){
+  var ws = WebSocket(Constructor.req.url.cd(name).href);
+  ws.on('open', debug.bind(null, 'open WebSocket.'));
+  ws.on('message', function(string, flags){
+    var data = JSON.parse(string);
+    Constructor.emit(name, data);
+  })
+}
 
 /**
  * default setting
  */
 var defaults = {
+  bind: true,
+  realtime: false,
   id: id('id'),
   validate: noop,
   serialize: cloneDeep,
@@ -120,7 +132,6 @@ var defaults = {
     return new this(data)
   },
   demodelize: demodelize,
-  bind: true,
   req: {
     get: reject('\'req.get\' is not implemented method.'),
     post: reject('\'req.post\' is not implemented method.'),
@@ -335,6 +346,8 @@ function Model(data){
 
 }
 util.inherits(Model, EventEmitter);
+EventEmitter.call(Model);
+assign(Model, EventEmitter.prototype);
 Model.defaults = defaults;
 Model.InvalidStatusException = InvalidStatusException;
 
@@ -343,33 +356,40 @@ Model.InvalidStatusException = InvalidStatusException;
  *
  * Model = Model.inherits([Function constructor, ]Object options);
  */
-Model.inherits = function(constructor, options){
+Model.inherits = function(Constructor, options){
   var Super = this;
-  if (typeof constructor !== 'function') {
-    options = constructor;
-    constructor = function ExtendedModel(data){
+  if (typeof Constructor !== 'function') {
+    options = Constructor;
+    Constructor = function ExtendedModel(data){
       return Super.call(this, data)
     }
   }
-  util.inherits(constructor, Super);
-  assign(constructor, Super);
+  util.inherits(Constructor, Super);
+  assign(Constructor, Super);
 
   options = defaultsDeep({}, options || {}, Super.rawOptions);
-  constructor.rawOptions = cloneDeep(options);
+  Constructor.rawOptions = cloneDeep(options);
   for (var name in methods) {
     options[name] = defaultsDeep({}, options[name] || {}, options);
   }
 
-  constructor.options = options;
-  constructor.req = options.req;
-  assign(constructor, methods);
-  assign(constructor, rawMethods);
+  Constructor.options = options;
+  Constructor.req = options.req;
+  assign(Constructor, methods);
+  assign(Constructor, rawMethods);
 
   // bind
   if (options.bind)
-    bindAll(constructor, keys(methods).concat(keys(rawMethods)));
+    bindAll(Constructor, keys(methods).concat(keys(rawMethods)));
 
-  return constructor;
+  // realtime
+  if (options.realtime) {
+    if (options.realtime === true || options.realtime.inserted) setWebSocket(Constructor, 'inserted');
+    if (options.realtime === true || options.realtime.updated) setWebSocket(Constructor, 'updated');
+    if (options.realtime === true || options.realtime.saved) setWebSocket(Constructor, 'saved');
+  }
+
+  return Constructor;
 }
 
 var options = defaultsDeep({}, defaults);
