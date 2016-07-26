@@ -17,7 +17,8 @@ var keys = require('lodash/keys');
 var get = require('lodash/fp/get');
 var flow = require('flow');
 var WebSocket = require('ws/lib/WebSocket');
-var Readable = require('stream').Readable;
+var WebSocketStream = require('websocket-stream');
+var map = require('event-stream').map;
 
 /**
  * helper functions
@@ -334,46 +335,25 @@ rawMethods.delete = function(){
 
 var realtimeMethods = {};
 
+var createRealtimeMethods = function(name){
+	return function(){
+		var url = this.req.url.cd(name);
+		url.protocol = 'ws';
+		return WebSocketStream(url.href)
+		.pipe(map(function(data, next){
+			next(null, flow(String, JSON.parse)(data));
+		}));
+	}
+};
 /**
- * inserted
+ * inserted, updated, saved, deleted
  *
  * Stream = Model.inserted();
  */
-var EventStream = function(name){
-	if (!(this instanceof EventStream)) return new EventStream(name);
-	Readable.call(this, {});
-	this.name = name;
-};
-util.inherits(EventStream, Readable);
-
-EventStream.prototype._read = function(){
-	if (!this.ws) this._init();
-}
-EventStream.prototype._init = function(){
-  var url = this.req.url.cd(this.name).href;
-  var ws = WebSocket(url);
-  ws.on('open', debug.bind(null, `open WebSocket. url: ${url}`));
-  ws.on('message', function(string, flags){
-    var data = JSON.parse(string);
-    this.push(data);
-  }.bind(this))
-}
-EventStream.prototype._read = function(){
-	if (!this.ws) this._init()
-}
-var eventStream = function(name){
-  return function(){
-
-    var url = this.req.url.cd(name).href;
-    var ws = WebSocket(url);
-    ws.on('open', debug.bind(null, `open WebSocket. url: ${url}`));
-    ws.on('message', function(string, flags){
-      var data = JSON.parse(string);
-      this.emit(name, data);
-    }.bind(this))
-  }
-}
-
+realtimeMethods.inserted = createRealtimeMethods('inserted');
+realtimeMethods.updated = createRealtimeMethods('updated');
+realtimeMethods.saved = createRealtimeMethods('saved');
+realtimeMethods.deleted = createRealtimeMethods('deleted');
 
 var instanceMethods = pick(methods, ['insert', 'update', 'deleteById', 'byId', 'save']);
 
@@ -422,6 +402,7 @@ Model.inherits = function(Constructor, options){
   Constructor.req = options.req;
   assign(Constructor, methods);
   assign(Constructor, rawMethods);
+  assign(Constructor, realtimeMethods);
 
   // bind
   if (options.bind)
@@ -446,6 +427,7 @@ for (var name in methods) {
 Model.options = options;
 assign(Model, methods);
 assign(Model, rawMethods);
+assign(Model, realtimeMethods);
 
 /**
  * instance methods

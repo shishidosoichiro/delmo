@@ -7,6 +7,8 @@ var should = chai.should();
 var Model = require('../');
 var Req = require('req');
 
+var map = require('event-stream').map;
+
 var crypto = require('crypto');
 var Datastore = require('nedb');
 var db = new Datastore();
@@ -173,6 +175,29 @@ describe('actually', function(){
         return data;
       })
       .then(User.save)
+    })
+  })
+
+  describe('#inserted', function(){
+  	var shouldEqualUser = function(a, b){
+      should.equal(a.username, b.username);
+      should.equal(a.description, b.description);
+  	};
+    it('should receive inserted data.', function(done){
+    	var users = [
+    		{username: 'user1#inserted', description: 'My name is user1#inserted.'},
+				{username: 'user2#inserted', description: 'My name is user2#inserted.'}
+    	];
+      var counter = 0;
+      User.inserted()
+      .pipe(map(function(data, next){
+      	console.log(data)
+      	shouldEqualUser(users[counter], data);
+      	counter++;
+      	if (counter === users.length) done();
+      }))
+      User.insert(users[0]);
+      User.insert(users[1]);
     })
   })
 })

@@ -24,8 +24,10 @@
   },
   "homepage": "https://github.com/shishidosoichiro/delmo#readme",
   "dependencies": {
+    "event-stream": "^3.3.4",
     "flow": "git+https://github.com/shishidosoichiro/flow.js.git",
     "lodash": "^4.13.1",
+    "websocket-stream": "^3.2.1",
     "ws": "^1.1.1"
   },
   "devDependencies": {
