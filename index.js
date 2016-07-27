@@ -10,7 +10,6 @@ var cloneDeep = require('lodash/cloneDeep');
 var assign = require('lodash/assign');
 var bindAll = require('lodash/bindAll');
 var pick = require('lodash/pick');
-var slice = require('lodash/slice');
 var keys = require('lodash/keys');
 var get = require('lodash/fp/get');
 var flow = require('flow');

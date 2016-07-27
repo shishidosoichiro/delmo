@@ -113,6 +113,33 @@ Tweet.save({tweet: 'hello.'});
 // -> post 'hello' to http://example.com/api/tweet with authentication.
 ```
 
+### Watch by WebSocket(Stream Interface)
+
+```js
+function Chat(data){
+	return Model.call(this, data);
+}
+Model.inherits(Chat, {req: Req('http://example.com/api/chat')})
+
+// connect to 'ws://example.com/api/chat/inserted'
+// and receive data.
+Chat.inserted()
+.pipe(console.log.bind(console))
+```
+
+### Watch by WebSocket(Event Interface)
+
+```js
+function Chat(data){
+	return Model.call(this, data);
+}
+Model.inherits(Chat, {req: Req('http://example.com/api/chat'), realtime: true})
+
+// connect to 'ws://example.com/api/chat/inserted'
+// and receive data.
+Chat.on('inserted', console.log.bind(console))
+```
+
 ## API
 
 - Constructor Methods
@@ -130,12 +157,26 @@ Tweet.save({tweet: 'hello.'});
         - post
         - put
         - delete
+    - Watch Methods
+        - inserted
+        - updated
+        - saved
+        - deleted
+- Contructor Events
+    - inserted
+    - updated
+    - saved
+    - deleted
 - Instance Methods
     - save
     - byId
     - deleteById
     - insert
     - update
+- Instance Events
+    - updated(Not Implemented)
+    - deleted(Not Implemented)
+    - changed(Not Implemented)
 
 
 ## Memo
@@ -165,7 +206,14 @@ tom.phone = 'abcdef';
 tom.on('error', console.log.bind(console))
 
 // event emitter
-User.tail({word: 'jordan'})
-.pipe(app.notify)
+var list = User.List();
+
+list.on('pushed', User.insert)
+list.on('poped', User.delete)
+list.on('changed', User.update)
+
+list.pushed()
+.pipe(flow(User.insert))
 
 ```
+
