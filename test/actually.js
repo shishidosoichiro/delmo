@@ -191,7 +191,6 @@ describe('actually', function(){
       var counter = 0;
       User.inserted()
       .pipe(map(function(data, next){
-      	console.log(data)
       	shouldEqualUser(users[counter], data);
       	counter++;
       	if (counter === users.length) done();
