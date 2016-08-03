@@ -50,7 +50,6 @@ var defaults = {
     throw new InvalidStatusException(res);
   },
   modelize: function(data){
-    if (!data) return data;
     return new this(data)
   },
   demodelize: demodelize,
